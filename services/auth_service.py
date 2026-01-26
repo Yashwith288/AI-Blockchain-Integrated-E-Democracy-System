@@ -39,24 +39,29 @@ def login_user(email: str, password: str):
 
     # Clear and set Flask session (used by decorators)
     session.clear()
-    session["user_id"] = user["id"]
+    session["user_id"] = str(user["id"])
     session["email"] = user["email"]
     session["role"] = normalize_role(user["role"])
-    session["state_id"] = user.get("state_id")
-    session["district_id"] = user.get("district_id")
-    session["constituency_id"] = user.get("constituency_id")
-    session["booth_id"] = user.get("booth_id")
+    session["state_id"] = str(user["state_id"]) if user.get("state_id") else None
+    session["district_id"] = str(user["district_id"]) if user.get("district_id") else None
+    session["constituency_id"] = str(user["constituency_id"]) if user.get("constituency_id") else None
+    session["booth_id"] = str(user["booth_id"]) if user.get("booth_id") else None
     session["logged_in_at"] = datetime.utcnow().isoformat()
 
     # Audit log
     create_audit_log(
-        user_id=user["id"],
+        user_id=str(user["id"]),
         action="LOGIN",
         entity_type="USER",
-        entity_id=user["id"]
+        entity_id=str(user["id"])
     )
 
-    return user
+    return {
+        "id": str(user["id"]),
+        "email": user["email"],
+        "role": user["role"]
+    }
+
 
 
 def logout_current_user():

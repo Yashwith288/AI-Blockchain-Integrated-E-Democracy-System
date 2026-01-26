@@ -12,7 +12,15 @@ from routes.public_routes import bp as public_bp
 
 
 def create_app():
-    app = Flask(__name__)
+    import os
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(BASE_DIR, "templates"),
+        static_folder=os.path.join(BASE_DIR, "static")
+    )
+
     app.config["SECRET_KEY"] = Config.SECRET_KEY
     app.config["DEBUG"] = Config.DEBUG
 

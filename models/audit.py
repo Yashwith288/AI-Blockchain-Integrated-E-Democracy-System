@@ -25,7 +25,7 @@ def create_audit_log(
         "action": action,
         "entity_type": entity_type,
         "entity_id": entity_id,
-        "timestamp": utc_now()
+        "timestamp": utc_now().isoformat()
     }
     return insert_record(AUDIT_LOGS_TABLE, payload, use_admin=True)
 
