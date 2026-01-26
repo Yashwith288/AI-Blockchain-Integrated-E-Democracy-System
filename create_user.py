@@ -30,12 +30,12 @@ supabase = create_client(
 # -----------------------------
 
 USER_DATA = {
-    "email": "cec@eci.gov.in",
-    "password": "cec@12345678",
-    "role": "CEC",
+    "email": "ceo@eci.gov.in",
+    "password": "ceo@12345678",
+    "role": "CEO",
 
     # Hierarchy (set None if not applicable)
-    "state_id": None,
+    "state_id": 'c44b37b1-ced8-4344-b091-4e60465dbbf3',
     "district_id": None,
     "constituency_id": None,
     "booth_id": None
