@@ -1,4 +1,4 @@
-from supabase.client import supabase, supabase_admin
+from supabase_db.client import supabase_public, supabase_admin
 
 
 # -----------------------------
@@ -9,7 +9,7 @@ def fetch_one(table: str, filters: dict, use_admin: bool = False):
     """
     Fetch a single record from a table based on filters.
     """
-    client = supabase_admin if use_admin else supabase
+    client = supabase_admin if use_admin else supabase_public
 
     query = client.table(table).select("*")
     for key, value in filters.items():
@@ -25,7 +25,7 @@ def fetch_all(table: str, filters: dict = None, use_admin: bool = False):
     """
     Fetch all records from a table with optional filters.
     """
-    client = supabase_admin if use_admin else supabase
+    client = supabase_admin if use_admin else supabase_public
 
     query = client.table(table).select("*")
 
@@ -45,7 +45,7 @@ def insert_record(table: str, payload: dict, use_admin: bool = False):
     """
     Insert a new record into a table.
     """
-    client = supabase_admin if use_admin else supabase
+    client = supabase_admin if use_admin else supabase_public
 
     response = client.table(table).insert(payload).execute()
     return response.data
@@ -55,7 +55,7 @@ def update_record(table: str, filters: dict, payload: dict, use_admin: bool = Fa
     """
     Update record(s) in a table based on filters.
     """
-    client = supabase_admin if use_admin else supabase
+    client = supabase_admin if use_admin else supabase_public
 
     query = client.table(table).update(payload)
     for key, value in filters.items():
@@ -69,7 +69,7 @@ def delete_record(table: str, filters: dict, use_admin: bool = False):
     """
     Delete record(s) from a table based on filters.
     """
-    client = supabase_admin if use_admin else supabase
+    client = supabase_admin if use_admin else supabase_public
 
     query = client.table(table).delete()
     for key, value in filters.items():

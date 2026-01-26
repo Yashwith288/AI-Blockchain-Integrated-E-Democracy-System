@@ -1,4 +1,4 @@
-from supabase.db import fetch_one, fetch_all, insert_record
+from supabase_db.db import fetch_one, fetch_all, insert_record
 from utils.helpers import generate_uuid, utc_now
 
 

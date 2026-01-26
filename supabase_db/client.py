@@ -37,7 +37,7 @@ def get_supabase_client(use_service_role: bool = False) -> Client:
 # -----------------------------
 
 # Use this for most operations (citizens, reps, etc.)
-supabase: Client = get_supabase_client()
+supabase_public: Client = get_supabase_client()
 
 # Use this ONLY for trusted backend operations
 supabase_admin: Client = get_supabase_client(use_service_role=True)

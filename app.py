@@ -8,6 +8,7 @@ from routes.representative_routes import bp as representative_bp
 from routes.election_commission_routes import bp as commission_bp
 from routes.ledger_routes import bp as ledger_bp
 from routes.admin_routes import bp as admin_bp
+from routes.public_routes import bp as public_bp
 
 
 def create_app():
@@ -24,7 +25,7 @@ def create_app():
     app.register_blueprint(commission_bp)
     app.register_blueprint(ledger_bp)
     app.register_blueprint(admin_bp)
-    app.register_blueprint(public_routes.bp)
+    app.register_blueprint(public_bp)
 
 
     # -----------------------------
