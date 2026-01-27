@@ -27,7 +27,7 @@ def create_candidate(
         "constituency_id": constituency_id,
         "party_name": party_name,
         "status": "Pending",
-        "created_at": utc_now()
+        "created_at": utc_now().isoformat()
     }
     return insert_record(CANDIDATES_TABLE, payload, use_admin=True)
 
