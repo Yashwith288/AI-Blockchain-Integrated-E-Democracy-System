@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 from config import Config
 
+
 # Blueprints
 from routes.auth_routes import bp as auth_bp
 from routes.citizen_routes import bp as citizen_bp
@@ -14,6 +15,8 @@ from routes.presiding_officer_routes import bp as po_bp
 
 def create_app():
     import os
+    from dotenv import load_dotenv
+    load_dotenv()
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
     app = Flask(

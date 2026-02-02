@@ -20,6 +20,14 @@ class Config:
     SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
     # -----------------------
+    # Mail Settings
+    # -----------------------
+    MAIL_USERNAME = os.getenv("MAIL_USERNAME")
+    MAIL_PASSWORD= os.getenv("MAIL_PASSWORD")
+    MAIL_HOST= os.getenv("MAIL_HOST", "smtp.gmail.com")
+    MAIL_PORT = int(os.getenv("MAIL_PORT", 587))
+
+    # -----------------------
     # App Settings
     # -----------------------
     APP_NAME = os.getenv("APP_NAME", "E-Democracy")
