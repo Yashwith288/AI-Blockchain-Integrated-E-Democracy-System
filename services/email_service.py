@@ -28,7 +28,7 @@ Your One-Time Password (OTP) for voting is:
 This OTP is valid for 5 minutes.
 Please do not share it with anyone.
 
-— eVote System
+— AI-Blockchain Integrated E-Democracy System Team
 """
 
     msg = MIMEMultipart()

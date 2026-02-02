@@ -11,7 +11,7 @@ def generate_otp(user_id):
     otp = str(random.randint(100000, 999999))
     OTP_STORE[user_id] = {
         "otp": otp,
-        "expires_at": datetime.utcnow() + timedelta(minutes=5)
+        "expires_at": datetime.utcnow() + timedelta(minutes=1)
     }
     return otp
 
