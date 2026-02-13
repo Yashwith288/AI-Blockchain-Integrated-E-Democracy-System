@@ -35,6 +35,25 @@
         {{ comment.comment }}
     </p>
 
+    <div class="comment-vote-panel">
+    <button
+        class="vote-btn up {% if comment.user_vote == 'up' %}active{% endif %}"
+        onclick="voteComment('{{ comment.id }}', 'up')"
+    >
+        ▲
+    </button>
+
+    <span class="comment-score">{{ comment.score}}</span>
+
+    <button
+        class="vote-btn down {% if comment.user_vote == 'down' %}active{% endif %}"
+        onclick="voteComment('{{ comment.id }}', 'down')"
+    >
+        ▼
+    </button>
+</div>
+
+
     <!-- Actions -->
     <div class="comment-actions">
         <a href="#" onclick="toggleReply('{{ comment.id }}'); return false;">

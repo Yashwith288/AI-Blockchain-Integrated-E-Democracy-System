@@ -24,6 +24,8 @@ from services.issue_service import close_issue
 from services.citizen_service import ensure_citizen_alias
 from models.user import get_user_by_id
 from models.user import get_display_name_by_user_id
+from models.comment_vote import get_comment_score, get_user_comment_vote
+from models.user import get_user_by_id, get_display_name_by_user_id
 
 
 
@@ -301,6 +303,11 @@ def issue_detail(issue_id):
             c["role"] = role
             c["is_official"] = role in ["ELECTED_REP", "OPPOSITION_REP"]
 
+            c["score"] = get_comment_score(c["id"])
+
+            user_vote = get_user_comment_vote(c["id"], session["user_id"])
+            c["user_vote"] = user_vote["vote_type"] if user_vote else None
+
         # 🔁 recurse into replies
             if c.get("replies"):
                 attach_usernames_to_comments(c["replies"], issue_owner_id)
@@ -357,3 +364,21 @@ def submit_issue_feedback(issue_id):
         url_for("citizen.issue_detail", issue_id=issue_id)
     )
 
+@bp.route("/comments/<comment_id>/vote", methods=["POST"])
+@login_required
+def vote_comment(comment_id):
+    data = request.get_json()
+    vote = data.get("vote")
+
+    if vote not in {"up", "down"}:
+        return {"error": "Invalid vote"}, 400
+
+    from services.comment_vote_service import toggle_comment_vote
+
+    toggle_comment_vote(
+        comment_id=comment_id,
+        user_id=session["user_id"],
+        vote_type=vote
+    )
+
+    return "", 204

@@ -144,3 +144,10 @@ function toggleThread(commentId) {
     }
 }
 
+function voteComment(commentId, voteType) {
+    fetch(`/citizen/comments/${commentId}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vote: voteType })
+    }).then(() => window.location.reload());
+}
