@@ -20,7 +20,7 @@ from services.issue_service import get_threaded_comments
 from models.issue_timeline import get_issue_timeline
 from models.issue_feedback import get_feedback
 from models.issue_feedback import submit_feedback as save_feedback
-from services.issue_service import close_issue
+from services.issue_service import citizen_confirm_resolution
 from services.citizen_service import ensure_citizen_alias
 from models.user import get_user_by_id
 from models.user import get_display_name_by_user_id
@@ -28,6 +28,8 @@ from models.comment_vote import get_comment_score, get_user_comment_vote
 from models.user import get_user_by_id, get_display_name_by_user_id
 import cloudinary.uploader
 from models.issue_image import add_issue_image
+from services.score_service import reward_successful_issue_resolution
+from models.issue import get_issue_resolution
 
 
 
@@ -371,7 +373,11 @@ def confirm_resolution(issue_id):
         issue_id=issue_id,
         user_id=session.get("user_id")
     )
-
+    issue = get_issue_resolutions(issue_id)
+    reward_successful_issue_resolution(
+        rep_user_id=issue["resolved_by"],  # or resolved_by
+        issue_id=issue_id
+    )
     return "", 204
 
 @bp.route("/issues/<issue_id>")
@@ -475,7 +481,8 @@ def submit_issue_feedback(issue_id):
     )
 
     # Close issue after feedback
-    close_issue(issue_id, session["user_id"])
+    citizen_confirm_resolution(issue_id, session["user_id"])
+
 
     return redirect(
         url_for("citizen.issue_detail", issue_id=issue_id)

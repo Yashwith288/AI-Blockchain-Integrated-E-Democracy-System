@@ -95,34 +95,18 @@ def comment_on_issue(issue_id: str, user_id: str, comment: str,parent_comment_id
     )
 
 
-from models.issue import update_issue_status
-
-def resolve_issue_rep(issue_id: str, resolved_by: str):
-    issue = get_issue_by_id(issue_id)
-    if not issue:
-        raise ValueError("Issue not found")
-
-    # 1. Mark resolution
-    mark_issue_resolved(issue_id, resolved_by)
-
-    # 2. Update issue status
-    update_issue_status(issue_id, "Resolved")
-
-    # 3. Audit
-    create_audit_log(
-        user_id=resolved_by,
-        action="RESOLVE_ISSUE",
-        entity_type="ISSUE",
-        entity_id=issue_id
-    )
-
-
 
 def citizen_confirm_resolution(issue_id: str, user_id: str):
     confirm_issue_resolution(issue_id)
 
     # Optional but recommended
     update_issue_status(issue_id, "Closed")
+    add_issue_status(
+        issue_id=issue_id,
+        status="Closed",
+        changed_by=user_id,
+        note="Citizen confirmed resolution"
+    )
 
     create_audit_log(
         user_id=user_id,
@@ -170,14 +154,30 @@ def mark_in_progress(issue_id, rep_id, note, estimated_completion):
         estimated_completion_at=estimated_completion
     )
 
-def resolve_issue(issue_id, rep_id, note):
+def resolve_issue(issue_id: str, resolved_by: str,note: str):
+    issue = get_issue_by_id(issue_id)
+    if not issue:
+        raise ValueError("Issue not found")
+
+    # 1. Mark resolution
+    mark_issue_resolved(issue_id, resolved_by)
+
+    # 2. Update issue status
     update_issue_status(issue_id, "Resolved")
 
     add_issue_status(
         issue_id=issue_id,
         status="Resolved",
-        changed_by=rep_id,
+        changed_by=resolved_by,
         note=note
+    )
+
+    # 3. Audit
+    create_audit_log(
+        user_id=resolved_by,
+        action="RESOLVE_ISSUE",
+        entity_type="ISSUE",
+        entity_id=issue_id
     )
 
 

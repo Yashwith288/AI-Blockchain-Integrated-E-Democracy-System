@@ -17,6 +17,7 @@ from models.rep_policy_comments import get_policy_comments
 
 
 
+
 bp = Blueprint("rep_policy", __name__, url_prefix="/policy")
 
 
@@ -46,22 +47,29 @@ def policy_feed():
 @role_required("ELECTED_REP", "OPPOSITION_REP")
 def create_policy():
     if request.method == "POST":
+        title = request.form.get("title")
         content = request.form.get("content")
-        if not content:
-            flash("Content cannot be empty", "error")
+        images = request.files.getlist("images")
+
+
+        if not title or not content:
+            flash("Title and content are required", "error")
             return redirect(request.url)
 
         create_new_policy_post(
             user_id=session["user_id"],
             role=session["role"],
             constituency_id=session["constituency_id"],
-            content=content
+            title=title,
+            content=content,
+            images=images
         )
 
-        flash("Policy post created", "success")
+        flash("Forum post created", "success")
         return redirect(url_for("rep_policy.policy_feed"))
 
     return render_template("policy/create.html")
+
 
 
 # -------------------------------------------------
@@ -92,6 +100,7 @@ def view_policy(post_id):
 @role_required("ELECTED_REP", "OPPOSITION_REP")
 def counter_statement(post_id):
     content = request.form.get("content")
+    images = request.files.getlist("images")
     if not content:
         flash("Content required", "error")
         return redirect(url_for("rep_policy.view_policy", post_id=post_id))
@@ -100,7 +109,8 @@ def counter_statement(post_id):
         post_id=post_id,
         user_id=session["user_id"],
         role=session["role"],
-        content=content
+        content=content,
+        images=images
     )
 
     flash("Statement added", "success")

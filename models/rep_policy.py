@@ -1,5 +1,6 @@
 from supabase_db.db import fetch_one, fetch_all, insert_record, update_record
 from utils.helpers import generate_uuid, utc_now
+from models.voter import get_voter_by_user_id
 
 
 REP_POLICY_POSTS_TABLE = "rep_policy_posts"
@@ -14,7 +15,9 @@ def create_policy_post(
     user_id: str,
     role: str,
     constituency_id: str,
-    content: str
+    title: str,
+    content: str,
+    image_urls: list = None
 ):
     """
     Create a new policy post.
@@ -26,8 +29,10 @@ def create_policy_post(
         "constituency_id": constituency_id,
         "created_by_user_id": user_id,
         "created_by_role": role,
+        "title": title,
         "representative_statement": content if role == "ELECTED_REP" else None,
         "opposition_statement": content if role == "OPPOSITION_REP" else None,
+        "image_urls": image_urls or [],
         "status": "OPEN",
         "created_at": utc_now().isoformat(),
         "updated_at": utc_now().isoformat(),
@@ -37,7 +42,21 @@ def create_policy_post(
 
 
 def get_policy_post_by_id(post_id: str):
-    return fetch_one(REP_POLICY_POSTS_TABLE, {"id": post_id})
+    post = fetch_one(REP_POLICY_POSTS_TABLE, {"id": post_id})
+    if not post:
+        return None
+    # Fetch user info
+    user = get_voter_by_user_id(post["created_by_user_id"])
+    print('user info:', user)
+    # Fetch representative info
+    rep = fetch_one("representatives", {"user_id": post["created_by_user_id"]})
+    print('rep info:', rep)
+    post["author_name"] = user.get("full_name") if user else "Unknown"
+    post["party_name"] = rep.get("party_name") if rep else "Independent"
+    print(post)
+
+    return post
+
 
 
 def get_policy_posts_by_constituency(constituency_id: str):
@@ -136,5 +155,16 @@ def remove_vote(post_id: str, user_id: str):
         REP_POLICY_VOTES_TABLE,
         {"post_id": post_id, "user_id": user_id},
         {"vote_value": 0},
+        use_admin=True
+    )
+
+def update_policy_post_images(post_id, image_urls):
+    return update_record(
+        REP_POLICY_POSTS_TABLE,
+        {"id": post_id},
+        {
+            "counter_image_urls": image_urls,
+            "updated_at": utc_now().isoformat()
+        },
         use_admin=True
     )

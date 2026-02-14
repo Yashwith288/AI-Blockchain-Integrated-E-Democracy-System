@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session
 from services.accountability_service import build_accountability_snapshot
 from utils.decorators import login_required
 
@@ -11,7 +11,7 @@ def view_rep_accountability(rep_user_id):
     # constituency resolution can be inferred or passed
     snapshot = build_accountability_snapshot(
         rep_user_id=rep_user_id,
-        constituency_id=None  # optional refinement
+        constituency_id=session.get("constituency_id")
     )
 
     return render_template(

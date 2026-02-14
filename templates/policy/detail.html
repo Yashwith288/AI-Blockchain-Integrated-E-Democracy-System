@@ -30,64 +30,131 @@
 {% endmacro %}
 
 {% block content %}
+{% set first_role = post.created_by_role %}
+{% set second_role = "OPPOSITION_REP" if first_role == "ELECTED_REP" else "ELECTED_REP" %}
 <div class="policy-detail">
 
-    <h2>📜 Policy Discussion</h2>
+    <h2>📜 {{ post.title if post.title else "Public Forum Discussion" }}</h2>
+
+    <div class="policy-meta">
+        <strong>{{ post.author_name }}</strong>
+
+        {% if post.party_name %}
+            <span class="party-badge">• {{ post.party_name }}</span>
+        {% endif %}
+
+        <span class="post-time">• Posted {{ post.created_at }}</span>
+    </div>
 
     <!-- ======================
          Representative Section
     ======================= -->
-    <section class="policy-section">
+<section class="policy-section">
+
+    {% if first_role == "ELECTED_REP" %}
         <h3>🏛️ Representative Position</h3>
+
+        {% if post.image_urls %}
+        <div class="policy-images">
+            {% for img in post.image_urls %}
+                <img src="{{ img }}" class="policy-image">
+            {% endfor %}
+        </div>
+        {% endif %}
 
         {% if post.representative_statement %}
             <p>{{ post.representative_statement }}</p>
         {% else %}
             <p><em>No representative statement yet.</em></p>
         {% endif %}
-    </section>
 
-    <!-- ======================
-         Opposition Section
-    ======================= -->
-    <section class="policy-section">
+    {% else %}
         <h3>⚖️ Opposition Position</h3>
 
-       {% if post.opposition_statement %}
-    <p>{{ post.opposition_statement }}</p>
+        {% if post.image_urls %}
+        <div class="policy-images">
+            {% for img in post.image_urls %}
+                <img src="{{ img }}" class="policy-image">
+            {% endfor %}
+        </div>
+        {% endif %}
 
-{% elif session.role == "OPPOSITION_REP" %}
-    <div class="empty-state">
-        <p><em>You have not added your official opposition response yet.</em></p>
+        {% if post.opposition_statement %}
+            <p>{{ post.opposition_statement }}</p>
+        {% else %}
+            <p><em>No opposition statement yet.</em></p>
+        {% endif %}
 
-        <form
-            method="POST"
-            action="{{ url_for('rep_policy.counter_statement', post_id=post.id) }}"
-        >
-            <label>Official Opposition Response</label>
-            <textarea name="content" rows="4" required
-                      placeholder="Present the opposition's official position..."></textarea>
-            <button class="btn-primary">Submit Opposition Response</button>
-        </form>
-    </div>
+    {% endif %}
 
-{% else %}
-    <p><em>Opposition response has not been submitted yet.</em></p>
-{% endif %}
+</section>
 
-    </section>
 
     <!-- ======================
          Counter Statement Form
     ======================= -->
-        <form
-            method="POST"
-            action="{{ url_for('rep_policy.counter_statement', post_id=post.id) }}"
-        >
-            <label>Add Your Statement</label>
-            <textarea name="content" rows="4" required></textarea>
-            <button class="btn-secondary">Submit</button>
-        </form>
+        <section class="policy-section">
+
+    {% if second_role == "ELECTED_REP" %}
+        <h3>🏛️ Representative Response</h3>
+
+        {% if post.representative_statement and first_role != "ELECTED_REP" %}
+            {% if post.counter_image_urls %}
+    {% for img in post.counter_image_urls %}
+        <img src="{{ img }}" class="policy-image">
+    {% endfor %}
+{% endif %}
+
+            <p>{{ post.representative_statement }}</p>
+        {% elif session.role == "ELECTED_REP" %}
+            <div class="empty-state">
+                <p><em>You have not added your official response yet.</em></p>
+
+                <form method="POST"
+                      action="{{ url_for('rep_policy.counter_statement', post_id=post.id) }}" enctype="multipart/form-data">
+                    <textarea name="content" rows="4" required
+                              placeholder="Present the representative’s response..."></textarea>
+                              <label>Upload Supporting Images (optional)</label>
+<input type="file" name="images" multiple accept="image/*">
+                    <button class="btn-primary">Submit Response</button>
+                </form>
+            </div>
+        {% else %}
+            <p><em>Representative response not submitted yet.</em></p>
+        {% endif %}
+
+    {% else %}
+        <h3>⚖️ Opposition Response</h3>
+
+        {% if post.opposition_statement and first_role != "OPPOSITION_REP" %}
+        {% if post.counter_image_urls %}
+    {% for img in post.counter_image_urls %}
+        <img src="{{ img }}" class="policy-image">
+    {% endfor %}
+{% endif %}
+
+            <p>{{ post.opposition_statement }}</p>
+        {% elif session.role == "OPPOSITION_REP" %}
+            <div class="empty-state">
+                <p><em>You have not added your official opposition response yet.</em></p>
+
+                <form method="POST"
+                      action="{{ url_for('rep_policy.counter_statement', post_id=post.id) }}" enctype="multipart/form-data">
+                    <textarea name="content" rows="4" required
+                              placeholder="Present the opposition’s response..."></textarea>
+                              <label>Upload Supporting Images (optional)</label>
+<input type="file" name="images" multiple accept="image/*">
+                    <button class="btn-primary">Submit Opposition Response</button>
+                </form>
+            </div>
+        {% else %}
+            <p><em>Opposition response not submitted yet.</em></p>
+        {% endif %}
+
+    {% endif %}
+
+</section>
+
 
     <!-- ======================
          Voting
