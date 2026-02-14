@@ -1,19 +1,26 @@
 {% extends "base.html" %}
-{% set title = "Create Policy Post" %}
+{% set title = "Create Forum Post" %}
 
 {% block content %}
 <div class="create-policy">
 
-    <h2>📝 Create Policy Post</h2>
+    <h2>📝 Create Public Forum Post</h2>
 
-    <form method="POST">
-        <label>Policy Statement</label>
-        <textarea
-            name="content"
-            rows="6"
-            required
-            placeholder="Write your official policy position..."
-        ></textarea>
+<form method="POST" enctype="multipart/form-data">
+
+    <label>Title</label>
+    <input type="text" name="title" required>
+
+    <label>Statement</label>
+    <textarea name="content" rows="6" required></textarea>
+
+    <label>Upload Images</label>
+    <input type="file" name="images" multiple accept="image/*">
+
+    <button type="submit" class="btn-primary">Publish</button>
+
+</form>
+
 
         <button type="submit" class="btn-primary">
             Publish
@@ -22,6 +29,7 @@
         <a href="{{ url_for('rep_policy.policy_feed') }}" class="btn-secondary">
             Cancel
         </a>
+
     </form>
 
 </div>

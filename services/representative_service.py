@@ -13,8 +13,8 @@ from models.issue import get_issues_by_constituency
 # -----------------------------
 # Representative Service
 # -----------------------------
-
-#def post_update(user_id: str, constituency_id: str, content: str):
+'''
+def post_update(user_id: str, constituency_id: str, content: str):
     """
     Elected / Opposition representative creates a post.
     """
@@ -28,7 +28,7 @@ from models.issue import get_issues_by_constituency
     )
 
     return post
-
+'''
 
 def comment_on_rep_post(post_id: str, user_id: str, comment: str):
     """

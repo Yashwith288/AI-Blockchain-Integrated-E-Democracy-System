@@ -8,12 +8,10 @@ from statistics import mean
 def calculate_resolution_rate(rep_user_id, constituency_id):
     issues = get_issues_by_constituency(constituency_id)
 
-    accepted = [i for i in issues if i["status"] in ("Accepted", "In Progress", "Resolved")]
-    resolved = [i for i in issues if i["status"] == "Resolved" and i.get("citizen_confirmed")]
-
+    accepted = [i for i in issues if i["status"] in ("Accepted", "In Progress", "Resolved","Closed")]
+    resolved = [i for i in issues if i["status"] == "Closed"]
     if not accepted:
         return 0.0
-
     return round(len(resolved) / len(accepted), 2)
 
 

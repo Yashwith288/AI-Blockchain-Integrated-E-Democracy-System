@@ -1084,3 +1084,17 @@ button {
     color: #6c757d;
     margin-top: 10px;
 }
+.policy-meta {
+    margin-bottom: 1rem;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.party-badge {
+    color: #0a5;
+    font-weight: 600;
+}
+
+.post-time {
+    color: #777;
+}

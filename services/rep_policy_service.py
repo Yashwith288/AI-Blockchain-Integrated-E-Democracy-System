@@ -13,27 +13,67 @@ from services.policy_ai_service import (
 )
 from services.policy_ai_prompt import build_policy_prompt
 from services.ai_client import run_policy_analysis, AIClientError
-
+import cloudinary.uploader
+from utils.helpers import generate_uuid, utc_now
+import cloudinary.uploader
+from utils.helpers import utc_now
+from models.rep_policy import update_policy_post_images
 
 
 # -------------------------------------------------
 # Policy Post Creation
 # -------------------------------------------------
 
-def create_new_policy_post(user_id, role, constituency_id, content):
-    if role not in ("ELECTED_REP", "OPPOSITION_REP"):
-        raise PermissionError("Only representatives can create policy posts")
 
+
+
+def create_new_policy_post(user_id, role, constituency_id, title, content, images=None):
+    if role not in ("ELECTED_REP", "OPPOSITION_REP"):
+        raise PermissionError("Only representatives can create forum posts")
+
+    # -----------------------------
+    # Upload images to Cloudinary
+    # -----------------------------
+    image_urls = []
+
+    if images:
+        for file in images:
+            if file and file.filename:
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="forum_posts",   # changed folder for clarity
+                        resource_type="image",
+                        transformation=[
+                            {"width": 1200, "height": 1200, "crop": "limit"},
+                            {"quality": "auto"},
+                            {"fetch_format": "auto"}
+                        ]
+                    )
+                    image_urls.append(upload_result["secure_url"])
+
+                except Exception:
+                    # Skip failed uploads but continue creating post
+                    continue
+
+    # -----------------------------
+    # Create post in DB
+    # -----------------------------
     post = create_policy_post(
         user_id=user_id,
         role=role,
         constituency_id=constituency_id,
-        content=content
+        title=title,
+        content=content,
+        image_urls=image_urls
     )
 
+    # -----------------------------
+    # Audit log
+    # -----------------------------
     create_audit_log(
         user_id=user_id,
-        action="CREATE_POLICY_POST",
+        action="CREATE_FORUM_POST",
         entity_type="REP_POLICY_POST",
         entity_id=post[0]["id"]
     )
@@ -41,15 +81,17 @@ def create_new_policy_post(user_id, role, constituency_id, content):
     return post
 
 
+
+
 # -------------------------------------------------
 # Counter Statement Logic
 # -------------------------------------------------
 
-def add_counter_statement(post_id, user_id, role, content):
+def add_counter_statement(post_id, user_id, role, content, images=None):
     post = get_policy_post_by_id(post_id)
     if not post:
         raise ValueError("Policy post not found")
-
+    
     if role == "ELECTED_REP":
         if post.get("representative_statement"):
             raise ValueError("Representative statement already exists")
@@ -107,24 +149,58 @@ def get_policy_feed(constituency_id):
         reverse=True
     )
 
-def add_counter_statement(post_id, user_id, role, content):
+def add_counter_statement(post_id, user_id, role, content, images=None):
     post = get_policy_post_by_id(post_id)
     if not post:
         raise ValueError("Policy post not found")
 
+    # ---------------------------
+    # Upload images to Cloudinary
+    # ---------------------------
+    image_urls = []
+
+    if images:
+        for file in images:
+            if file and file.filename:
+                upload_result = cloudinary.uploader.upload(
+                    file,
+                    folder="forum_posts",
+                    resource_type="image",
+                    transformation=[
+                        {"width": 1200, "height": 1200, "crop": "limit"},
+                        {"quality": "auto"},
+                        {"fetch_format": "auto"}
+                    ]
+                )
+                image_urls.append(upload_result["secure_url"])
+
+    # ---------------------------
+    # Update statements
+    # ---------------------------
     if role == "ELECTED_REP":
         if post.get("representative_statement"):
             raise ValueError("Representative statement already exists")
+
         update_representative_statement(post_id, content)
+
+        if image_urls:
+            update_policy_post_images(post_id, image_urls)
 
     elif role == "OPPOSITION_REP":
         if post.get("opposition_statement"):
             raise ValueError("Opposition statement already exists")
+
         update_opposition_statement(post_id, content)
+
+        if image_urls:
+            update_policy_post_images(post_id, image_urls)
 
     else:
         raise PermissionError("Only representatives may respond")
 
+    # ---------------------------
+    # Audit log
+    # ---------------------------
     create_audit_log(
         user_id=user_id,
         action="ADD_COUNTER_STATEMENT",

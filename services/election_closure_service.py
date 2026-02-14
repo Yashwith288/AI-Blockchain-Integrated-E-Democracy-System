@@ -65,7 +65,11 @@ def close_election_and_assign_reps(election):
             constituency_id=constituency_id,
             rep_type="ELECTED_REP",
             term_start=term_start,
-            term_end=term_end
+            term_end=term_end,
+            election_id=election_id,
+            candidate_id=winner["candidate_id"],
+            candidate_name=winner["candidate_name"],
+            party_name=winner["party_name"]
         )
 
         if runner_up:
@@ -74,7 +78,11 @@ def close_election_and_assign_reps(election):
                 constituency_id=constituency_id,
                 rep_type="OPPOSITION_REP",
                 term_start=term_start,
-                term_end=term_end
+                term_end=term_end,
+                election_id=election_id,
+                candidate_id=runner_up["candidate_id"],
+                candidate_name=runner_up["candidate_name"],
+                party_name=runner_up["party_name"]
             )
 
     finalize_merkle_tree_for_election(election["id"])

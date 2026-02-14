@@ -18,7 +18,11 @@ def create_representative(
     constituency_id: str,
     rep_type: str,
     term_start,
-    term_end
+    term_end,
+    election_id: str,
+    candidate_id: str,
+    candidate_name: str,
+    party_name: str
 ):
     payload = {
         "id": generate_uuid(),
@@ -27,8 +31,13 @@ def create_representative(
         "type": rep_type,
         "term_start": term_start.isoformat(),
         "term_end": term_end.isoformat(),
+        "election_id": election_id,
+        "candidate_id": candidate_id,
+        "candidate_name": candidate_name,
+        "party_name": party_name,
+        "created_at": utc_now().isoformat(),
     }
-
+    initialize_rep_score(user_id)
     return insert_record(REPRESENTATIVES_TABLE, payload, use_admin=True)
 
 # -----------------------------
