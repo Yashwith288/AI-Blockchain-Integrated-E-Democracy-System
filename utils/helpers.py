@@ -14,18 +14,37 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
+from datetime import datetime
+
 def format_datetime(ts):
     if not ts:
         return ""
 
-    # Supabase returns string → convert to datetime
+    # If already formatted like "12 Feb 2026, 05:53 PM"
     if isinstance(ts, str):
-        ts = ts.replace("Z", "")  # remove timezone Z if present
-        dt = datetime.fromisoformat(ts)
+        # If it already matches your display format, return as-is
+        try:
+            datetime.strptime(ts, "%d %b %Y, %I:%M %p")
+            return ts  # already formatted
+        except ValueError:
+            pass
+
+        # Try ISO (Supabase)
+        try:
+            ts = ts.replace("Z", "")
+            dt = datetime.fromisoformat(ts)
+        except ValueError:
+            # Try DB format with microseconds
+            try:
+                dt = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S.%f")
+            except ValueError:
+                # Try DB format without microseconds
+                dt = datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
     else:
-        dt = ts
+        dt = ts  # already datetime object
 
     return dt.strftime("%d %b %Y, %I:%M %p")
+
 
 
 def _time_ago(ts):
@@ -187,3 +206,52 @@ def time_ago(timestamp):
         return f"{int(seconds // 86400)}d ago"
     else:
         return timestamp.strftime("%d %b %Y")
+    
+
+from datetime import datetime
+
+def _time_ago_issue(timestamp):
+    if not timestamp:
+        return ""
+
+    if isinstance(timestamp, str):
+        # Try ISO
+        try:
+            timestamp = datetime.fromisoformat(timestamp.replace("Z", ""))
+        except ValueError:
+            pass
+
+        # Try DB format with microseconds
+        if isinstance(timestamp, str):
+            try:
+                timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S.%f")
+            except ValueError:
+                pass
+
+        # Try DB format without microseconds
+        if isinstance(timestamp, str):
+            try:
+                timestamp = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                pass
+
+        # Try formatted display format
+        if isinstance(timestamp, str):
+            try:
+                timestamp = datetime.strptime(timestamp, "%d %b %Y, %I:%M %p")
+            except ValueError:
+                return ""  # Avoid crashing
+
+    now = datetime.utcnow()
+    diff = now - timestamp
+    seconds = diff.total_seconds()
+
+    if seconds < 60:
+        return "Just now"
+    elif seconds < 3600:
+        return f"{int(seconds // 60)} minutes ago"
+    elif seconds < 86400:
+        return f"{int(seconds // 3600)} hours ago"
+    else:
+        return f"{int(seconds // 86400)} days ago"
+

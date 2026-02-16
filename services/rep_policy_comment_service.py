@@ -65,7 +65,7 @@ def get_threaded_comments(post_id):
 
 def should_trigger_ai_reply(content: str) -> bool:
     content = content.strip().lower()
-    return "@ai" in content or content.endswith("?")
+    return "@ai" in content
 
 def build_comment_ai_prompt(post, thread_context, user_comment):
     return f"""

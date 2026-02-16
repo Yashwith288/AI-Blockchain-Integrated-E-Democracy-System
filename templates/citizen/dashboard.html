@@ -1,3 +1,12 @@
+{% macro time_ago(ts) %}
+    {% if ts %}
+        {% set diff = (namespace(minutes=( (utcnow() - ts).total_seconds() // 60 ))) %}
+        {{ diff.minutes|int }} minutes ago
+    {% else %}
+        just now
+    {% endif %}
+{% endmacro %}
+
 {% extends "base.html" %}
 {% set title = "Citizen Dashboard" %}
 
@@ -25,6 +34,12 @@
             <a href="{{ url_for('citizen.my_issues') }}" class="btn-secondary">
                 🧑‍⚖️ My Issues
             </a>
+            <a href="{{ url_for('rep_policy.policy_feed') }}" class="btn-secondary">
+                📜All Policies
+            </a>
+            <a href="{{ url_for('citizen.representatives') }}" class="btn-secondary">
+                🏛 Representatives
+            </a>
         </div>
     </div>
 
@@ -32,6 +47,22 @@
          Main Grid
     ========================== -->
     <div class="dashboard-grid">
+        <section class="dashboard-card highlight">
+    <div class="card-header">
+        <h3>🧠 Live Constituency Brief</h3>
+
+        {% if last_updated_minutes is not none %}
+        <span class="updated-time">
+            Updated {{ last_updated_minutes }} min ago
+        </span>
+        {% endif %}
+    </div>
+
+    <p class="summary-text">
+        {{ live_summary }}
+    </p>
+</section>
+
 
         <!-- Trending Issues -->
         <section class="dashboard-card">
@@ -87,11 +118,11 @@
     <!-- =========================
          Recently Resolved
     ========================== -->
-    <section class="dashboard-card wide">
+    <section class="dashboard-card">
         <h3>✅ Recently Resolved</h3>
 
         {% if resolved_issues %}
-            <div class="resolved-list">
+            <div class="issue-mini-card">
                 {% for issue in resolved_issues %}
                     <a
                         href="{{ url_for('citizen.issue_detail', issue_id=issue.id) }}"
@@ -110,6 +141,31 @@
             </p>
         {% endif %}
     </section>
+    <!-- Latest Policies -->
+<section class="dashboard-card">
+    <div class="card-header">
+        <h3>📜 Latest Policies</h3>
+    </div>
+
+    {% if policy_posts %}
+        {% for post in policy_posts %}
+            <div class="issue-mini-card">
+                <a href="{{ url_for('rep_policy.view_policy', post_id=post.id) }}">
+                    {{ post.title }}
+                </a>
+
+                <div class="meta">
+                    <span class="category">
+                        {{ post.author_name }} • {{ post.party_name }}
+                    </span>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="empty-text">No policies posted yet.</p>
+    {% endif %}
+</section>
+
 
 </div>
 {% endblock %}

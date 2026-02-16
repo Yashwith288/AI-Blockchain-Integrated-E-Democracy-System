@@ -18,6 +18,13 @@ from models.issue import (
     remove_issue_vote
 )
 from services.citizen_service import ensure_citizen_alias
+from models.issue import get_issue_by_id
+from services.issue_ai_prompt import build_issue_comment_prompt
+from services.ai_client import run_comment_reply, AIClientError
+from supabase_db.db import insert_record
+from utils.helpers import utc_now
+import os
+from utils.helpers import format_datetime,_time_ago_issue
 
 
 
@@ -68,6 +75,8 @@ def raise_issue(
 
     return issue
 
+def should_trigger_ai_reply(text: str) -> bool:
+    return "@ai" in text.lower()
 
 def upvote_downvote_issue(issue_id: str, user_id: str, vote_type: str):
     """
@@ -84,15 +93,71 @@ def upvote_downvote_issue(issue_id: str, user_id: str, vote_type: str):
     )
 
 
-def comment_on_issue(issue_id: str, user_id: str, comment: str,parent_comment_id: str = None):
-    add_issue_comment(issue_id, user_id, comment,parent_comment_id)
+def comment_on_issue(issue_id, user_id, comment, parent_comment_id=None):
 
-    create_audit_log(
+    # Save user comment
+    result = add_issue_comment(
+        issue_id=issue_id,
         user_id=user_id,
-        action="COMMENT_ISSUE",
-        entity_type="ISSUE",
-        entity_id=issue_id
+        comment=comment,
+        parent_comment_id=parent_comment_id
     )
+    # 🔥 AI trigger
+    if should_trigger_ai_reply(comment):
+
+        issue = get_issue_by_id(issue_id)
+
+        # -------------------------
+        # Build parent context
+        # -------------------------
+        parent_context = ""
+
+        if parent_comment_id:
+            from models.issue import get_issue_comments
+            all_comments = get_issue_comments(issue_id)
+
+            # collect chain upwards
+            comment_map = {c["id"]: c for c in all_comments}
+            current = comment_map.get(parent_comment_id)
+
+            chain = []
+            while current:
+                chain.append(current["comment"])
+                pid = current.get("parent_comment_id")
+                current = comment_map.get(pid) if pid else None
+
+            parent_context = "\n".join(reversed(chain))
+
+        # -------------------------
+        # Build prompt
+        # -------------------------
+        prompt = build_issue_comment_prompt(
+            issue,
+            parent_context,
+            comment
+        )
+
+        try:
+            ai_text = run_comment_reply(prompt)
+
+            ai_user_id = os.getenv("AI_SYSTEM_USER_ID")
+
+            insert_record(
+                "issue_comments",
+                {
+                    "issue_id": issue_id,
+                    "user_id": ai_user_id,
+                    "comment": ai_text,
+                    "parent_comment_id": result[0]["id"],
+                    "created_at": utc_now().isoformat()
+                },
+                use_admin=True
+            )
+
+        except AIClientError:
+            pass
+
+    return result
 
 
 
@@ -130,6 +195,9 @@ def build_comment_tree(comments):
 
 def get_threaded_comments(issue_id: str):
     comments = fetch_comments(issue_id)
+    for c in comments:                
+        c["time_ago"]=_time_ago_issue(c["created_at"])
+        c["created_at"]=format_datetime(c["created_at"])
     return build_comment_tree(comments)
 
 def accept_issue(issue_id, rep_id, note, estimated_start):
@@ -221,3 +289,6 @@ def toggle_issue_vote(issue_id: str, user_id: str, vote_type: str):
         # New vote
         upsert_issue_vote(issue_id, user_id, vote_type)
         return "ADDED"
+
+def should_trigger_ai_reply(text: str) -> bool:
+    return "@ai" in text.lower()

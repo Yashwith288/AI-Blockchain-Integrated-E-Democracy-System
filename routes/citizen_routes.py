@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from utils.decorators import login_required, role_required
 from services.voting_service import submit_vote
 from services.issue_service import raise_issue
-from models.issue import get_issues_by_constituency
+from models.issue import get_issues_by_constituency,get_issue_resolution
 from services.citizen_service import (
     get_constituency_issues,
     get_my_issues,
@@ -30,8 +30,14 @@ import cloudinary.uploader
 from models.issue_image import add_issue_image
 from services.score_service import reward_successful_issue_resolution
 from models.issue import get_issue_resolution
-
-
+import os
+from utils.helpers import format_datetime,_time_ago_issue
+from services.rep_policy_service import get_policy_feed
+from models.representative import get_representatives_with_photo
+from services.constituency_ai_service import generate_constituency_brief
+from models.constituency_brief import get_brief
+from datetime import datetime, timezone
+from utils.helpers import utc_now
 
 
 
@@ -59,13 +65,53 @@ def dashboard():
         if i["status"] in ("Resolved", "Closed")
     ][:5]
 
+    policy_posts = get_policy_feed(constituency_id)[:5]
+
+    # 🧠 Live AI constituency brief
+    live_summary = generate_constituency_brief(constituency_id)
+
+    brief_row = get_brief(constituency_id)
+    last_updated = brief_row["generated_at"] if brief_row else None
+    minutes_ago = None
+    if last_updated:
+        if isinstance(last_updated, str):
+            last_updated = datetime.fromisoformat(last_updated)
+        last_updated = brief_row["generated_at"] if brief_row else None
+        minutes_ago = None
+
+        if last_updated:
+
+            # 🔧 Convert string → datetime
+            if isinstance(last_updated, str):
+                try:
+                    last_updated = datetime.fromisoformat(last_updated)
+                except Exception:
+                    last_updated = None
+
+            if last_updated:
+
+                # 🔧 Force timezone awareness
+                if last_updated.tzinfo is None:
+                    last_updated = last_updated.replace(tzinfo=timezone.utc)
+
+                now = utc_now()
+
+                if now.tzinfo is None:
+                    now = now.replace(tzinfo=timezone.utc)
+
+                minutes_ago = int((now - last_updated).total_seconds() // 60)
 
     return render_template(
         "citizen/dashboard.html",
         trending_issues=trending_issues,
         my_issues=my_issues[:5],
-        resolved_issues=resolved_issues
+        resolved_issues=resolved_issues,
+        policy_posts=policy_posts,
+        live_summary=live_summary, 
+        last_updated=last_updated,
+        last_updated_minutes=minutes_ago
     )
+
 
 
 # -----------------------------
@@ -314,7 +360,16 @@ def verify_vote():
 @login_required
 @role_required("CITIZEN")
 def representatives():
-    reps = get_representatives(session.get("constituency_id"))
+    reps = get_representatives_with_photo(session.get("constituency_id"))
+    for r in reps:
+        if r.get("term_start"):
+            r["term_start"] = format_datetime(r["term_start"])
+        if r.get("term_end"):
+            r["term_end"] = format_datetime(r["term_end"])
+    reps = sorted(
+        reps,
+        key=lambda r: 0 if r.get("type") == "ELECTED_REP" else 1
+    )
     return render_template("citizen/representatives.html", representatives=reps)
 
 
@@ -373,7 +428,7 @@ def confirm_resolution(issue_id):
         issue_id=issue_id,
         user_id=session.get("user_id")
     )
-    issue = get_issue_resolutions(issue_id)
+    issue = get_issue_resolution(issue_id)
     reward_successful_issue_resolution(
         rep_user_id=issue["resolved_by"],  # or resolved_by
         issue_id=issue_id
@@ -408,6 +463,11 @@ def issue_detail(issue_id):
     issue = get_issue_by_id(issue_id)
     issue["username"] = get_comment_author_alias(issue["created_by"])
     issue["score"] = get_issue_score(issue_id) 
+    issue["created_at"]=format_datetime(issue["created_at"])
+    for t in timeline:
+        t["created_at"] = format_datetime(t["created_at"])
+        t["estimated_start_at"]=format_datetime(t["estimated_start_at"])
+        t["estimated_completion_at"]=format_datetime(t["estimated_completion_at"])
     user_vote = get_user_issue_vote(
         issue_id,
         session["user_id"]
@@ -415,7 +475,6 @@ def issue_detail(issue_id):
     user_vote = user_vote if user_vote else None
     user_vote = user_vote["vote_type"] if user_vote is not None else 0
     is_issue_owner = issue["created_by"] == session.get("user_id")
-
     def attach_usernames_to_comments(comments, issue_owner_id):
         for c in comments:
             c["display_name"] = get_display_name_by_user_id(c["user_id"])
@@ -423,29 +482,29 @@ def issue_detail(issue_id):
             user = get_user_by_id(c["user_id"])
             role = user["role"] if user else "CITIZEN"
             c["role"] = role
-            c["is_official"] = role in ["ELECTED_REP", "OPPOSITION_REP"]
+            c["is_official"] = role in ["ELECTED_REP", "OPPOSITION_REP"] 
 
             c["score"] = get_comment_score(c["id"])
 
             user_vote = get_user_comment_vote(c["id"], session["user_id"])
             c["user_vote"] = user_vote["vote_type"] if user_vote else None
-
-        # 🔁 recurse into replies
+            # 🔁 recurse into replies
             if c.get("replies"):
                 attach_usernames_to_comments(c["replies"], issue_owner_id)
-
     attach_usernames_to_comments(comments,issue["created_by"])
     return render_template(
-        "citizen/issue_detail.html",
-        issue=issue,
-        comments=comments,
-        resolution=resolution,
-        timeline=timeline, 
-        feedback=feedback,
-        is_issue_owner=is_issue_owner,
-        user_vote=user_vote,
-        images=images
-    )
+    "citizen/issue_detail.html",
+    issue=issue,
+    comments=comments,
+    resolution=resolution,
+    timeline=timeline,
+    feedback=feedback,
+    is_issue_owner=is_issue_owner,
+    user_vote=user_vote,
+    images=images,
+    AI_SYSTEM_USER_ID=os.getenv("AI_SYSTEM_USER_ID")
+)
+
 
 @bp.route("/issues/<issue_id>/comment", methods=["POST"])
 @login_required

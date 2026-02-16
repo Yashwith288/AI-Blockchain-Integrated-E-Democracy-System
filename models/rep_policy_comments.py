@@ -2,6 +2,8 @@ from supabase_db.db import fetch_one, fetch_all, insert_record
 from utils.helpers import generate_uuid, utc_now, format_datetime, _time_ago
 from datetime import datetime, timezone
 from flask import session
+from models.rep_policy import get_policy_post_by_id
+from models.representative import get_rep_by_election_id_constituency_id
 
 TABLE = "rep_policy_comments"
 
@@ -24,12 +26,20 @@ def get_policy_comments(post_id):
         "rep_policy_comments",
         {"post_id": post_id}
     ) or []
-
+    post=get_policy_post_by_id(post_id)
+    rep=get_rep_by_election_id_constituency_id(post["election_id"],post["constituency_id"])
     user_id = session.get("user_id")
 
     # attach username + time + vote info
     for c in comments:
-
+        c["is_op"] = c["user_id"] == post["created_by_user_id"]  # ⭐ OP FLAG
+        c["role"] = "CITIZEN"  # default
+        c["is_official"]=False
+        for r in rep:
+            if c["user_id"] == r["user_id"]:
+                c["role"] = r["type"]
+                c["is_official"]=True
+                break
         # -------------------------
         # Username logic
         # -------------------------
@@ -37,12 +47,16 @@ def get_policy_comments(post_id):
             c["username"] = "AI Bot"
         else:
             alias = fetch_one("citizen_alias", {"user_id": c["user_id"]})
-            if alias:
+            if c["is_official"]:
+                for r in rep:
+                    if c["role"] == r["type"]:
+                        c["username"] = r["candidate_name"]
+                        break
+            elif alias:
                 c["username"] = alias.get("random_username")
             else:
-                user = fetch_one("users", {"id": c["user_id"]})
-                c["username"] = user.get("full_name") if user else "Citizen"
-
+                c["username"] = "Citizen"
+        
         # -------------------------
         # Time
         # -------------------------

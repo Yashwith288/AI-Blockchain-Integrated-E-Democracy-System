@@ -1224,3 +1224,21 @@ button {
 .comment-count {
     color: #666;
 }
+
+.rep-photo {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.rep-photo img {
+    width: 110px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid var(--primary);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+}
+.updated-time {
+    font-size: 0.8rem;
+    color: #888;
+}

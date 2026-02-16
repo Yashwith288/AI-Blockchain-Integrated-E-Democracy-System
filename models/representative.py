@@ -145,3 +145,48 @@ def get_active_representatives(today: date):
 
 def get_all_representatives():
     return fetch_all(REPRESENTATIVES_TABLE)
+
+
+def get_rep_by_election_id_constituency_id(election_id: str, constituency_id: str):
+    return fetch_all(
+        REPRESENTATIVES_TABLE,
+        {
+            "election_id": election_id,
+            "constituency_id": constituency_id
+        }
+    )
+
+VOTER_MAP_TABLE = "voter_user_map"
+VOTERS_TABLE = "voters"
+
+
+def get_representatives_with_photo(constituency_id: str):
+    reps = fetch_all(
+        REPRESENTATIVES_TABLE,
+        {"constituency_id": constituency_id}
+    )
+
+    if not reps:
+        return []
+
+    for rep in reps:
+        photo_url = None
+
+        # 🔎 Step 1 — find voter id mapped to this user
+        voter_map = fetch_one(
+            VOTER_MAP_TABLE,
+            {"user_id": rep.get("user_id")}
+        )
+
+        if voter_map:
+            voter = fetch_one(
+                VOTERS_TABLE,
+                {"id": voter_map.get("voter_id")}
+            )
+
+            if voter:
+                photo_url = voter.get("photo_url")
+
+        rep["photo_url"] = photo_url
+
+    return reps

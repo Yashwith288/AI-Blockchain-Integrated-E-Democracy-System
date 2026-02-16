@@ -30,24 +30,45 @@
 
                     <!-- Representative Info -->
                     <div class="rep-info">
-                        <p>
-                            <strong>Representative ID:</strong>
-                            {{ rep.user_id }}
-                        </p>
 
-                        <p class="rep-note">
-                            {% if rep.type == "ELECTED_REP" %}
-                                Responsible for addressing and resolving civic issues.
-                            {% else %}
-                                Participates in debate and oversight of governance.
-                            {% endif %}
-                        </p>
-                    </div>
+    <p class="rep-name">
+        <strong>{{ rep.candidate_name or "Name not available" }}</strong>
+    </p>
+    <div class="rep-photo">
+    <img
+        src="{{ rep.photo_url or url_for('static', filename='img/default-avatar.png') }}"
+        alt="Representative photo"
+    >
+</div>
+
+
+    <p class="rep-party">
+        🏛 {{ rep.party_name or "Independent" }}
+    </p>
+
+    <p class="rep-term">
+        📅 Term:
+        {{ rep.term_start}}
+        →
+        {{ rep.term_end or "Ongoing"}}
+    </p>
+
+    <p class="rep-note">
+        {% if rep.type == "ELECTED_REP" %}
+            Responsible for addressing and resolving civic issues.
+        {% else %}
+            Participates in debate and oversight of governance.
+        {% endif %}
+    </p>
+
+</div>
+
 
                     <!-- Actions -->
                     <div class="rep-actions">
                         <a
-                            href="{{ url_for('citizen.representative_posts') }}"
+                            href="{{ url_for('rep_policy.policy_feed_for_rep', rep_user_id=rep.user_id) }}"
+
                             class="btn-secondary"
                         >
                             View Updates

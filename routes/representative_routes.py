@@ -14,7 +14,8 @@ from services.issue_service import (
     resolve_issue,
     reject_issue
 )
-
+from services.rep_policy_comment_service import add_comment,get_threaded_comments
+from models.rep_policy import get_policy_post_by_id
 
 bp = Blueprint("representative", __name__, url_prefix="/representative")
 
@@ -182,6 +183,7 @@ def progress(issue_id):
 
     flash("Issue marked as in progress.", "success")
     return redirect(url_for("representative.issue_management"))
+
 @bp.route("/issues/<issue_id>/resolve", methods=["POST"])
 @login_required
 @role_required("ELECTED_REP")

@@ -1,4 +1,4 @@
-<div class="comment-card" style="margin-left: {{ level * 20 }}px;">
+<div class="comment-card" style="margin-left: {{ level * 20 }} px;">
 
     <!-- Comment Header -->
     <div class="comment-header">
@@ -8,15 +8,15 @@
             <span id="toggle-icon-{{ comment.id }}">[–]</span>
         </a>
             <span class="comment-username">
-        {% if comment.role == "CITIZEN" %}
-    u/{{ comment.display_name }}
+{% if comment.user_id == '00000000-0000-0000-0000-000000000001' %}
+    🤖 AI Assistant
 {% else %}
-    {{ comment.display_name }}
+        u/{{ comment.display_name }}
 {% endif %}
+</span>
 
-    </span>
          {% if comment.is_op %}
-        <span class="op-badge">OP</span>
+        <span class="op-badge" title="Original Poster">OP</span>
     {% endif %}
     {% if comment.is_official %}
           {% if comment.role == "ELECTED_REP" %}
@@ -25,8 +25,9 @@
     <span class="opposition-badge">Opposition Response</span>
 {% endif %}    
     {% endif %}
-    <span class="comment-time">
-        {{ comment.created_at }}
+    <span class="comment-time"
+        title="{{ comment.created_at }}">
+        {{ comment.time_ago }}
     </span>
     </div>
 

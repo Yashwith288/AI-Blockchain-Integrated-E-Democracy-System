@@ -270,3 +270,41 @@ def add_counter_statement(post_id, user_id, role, content, images=None):
                 entity_id=post_id,
                 metadata={"error": str(e)}
             )
+
+def get_policy_feed_for_rep(constituency_id, rep_user_id):
+    posts = get_policy_posts_by_constituency(constituency_id)
+
+    # 🔴 Filter posts of only that representative
+    posts = [
+        p for p in posts
+        if p.get("created_by_user_id") == rep_user_id
+    ]
+
+    enriched = []
+
+    for p in posts:
+        p["author_name"] = (
+            p.get("rep_name")
+            if p.get("created_by_role") == "ELECTED_REP"
+            else p.get("opp_name")
+        )
+
+        p["party_name"] = (
+            p.get("rep_party")
+            if p.get("created_by_role") == "ELECTED_REP"
+            else p.get("opp_party")
+        )
+
+        p["time_ago"] = _time_ago(p.get("created_at"))
+        p["score"] = p["upvotes"] - p["downvotes"]
+
+        comments = fetch_all("rep_policy_comments", {"post_id": p["id"]}) or []
+        p["comment_count"] = len(comments)
+
+        enriched.append(p)
+
+    return sorted(
+        enriched,
+        key=lambda p: (p["score"], p["created_at"]),
+        reverse=True
+    )

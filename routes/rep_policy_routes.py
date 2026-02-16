@@ -16,6 +16,7 @@ from services.rep_policy_comment_service import (
     get_threaded_comments
 )
 from models.rep_policy_comments import get_policy_comments
+from services.rep_policy_service import get_policy_feed_for_rep
 
 
 
@@ -34,6 +35,20 @@ def policy_feed():
 
     posts = get_policy_feed(constituency_id)
 
+    return render_template(
+        "policy/feed.html",
+        posts=posts
+    )
+
+@bp.route("/rep/<rep_user_id>")
+@login_required
+def policy_feed_for_rep(rep_user_id):
+    constituency_id = session.get("constituency_id")
+
+    posts = get_policy_feed_for_rep(
+        constituency_id=constituency_id,
+        rep_user_id=rep_user_id
+    )
     return render_template(
         "policy/feed.html",
         posts=posts
