@@ -51,7 +51,7 @@ bp = Blueprint("citizen", __name__, url_prefix="/citizen")
 
 @bp.route("/dashboard")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def dashboard():
     constituency_id = session.get("constituency_id")
     user_id = session.get("user_id")
@@ -178,7 +178,7 @@ def vote():
 
 @bp.route("/issue/new", methods=["GET", "POST"])
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def new_issue():
     if request.method == "POST":
         try:
@@ -230,7 +230,7 @@ def new_issue():
 
 @bp.route("/issues")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def issues_feed():
     from models.issue import (
         get_issue_score,
@@ -286,7 +286,7 @@ def issues_feed():
 
 @bp.route("/my-issues")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def my_issues():
     from models.issue import (
         get_issue_score,
@@ -358,7 +358,7 @@ def verify_vote():
 
 @bp.route("/representatives")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def representatives():
     reps = get_representatives_with_photo(session.get("constituency_id"))
     for r in reps:
@@ -379,7 +379,7 @@ def representatives():
 
 @bp.route("/representatives/posts")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def representative_posts():
     posts = get_representative_posts(session.get("constituency_id"))
     return render_template("citizen/rep_posts.html", posts=posts)
@@ -391,7 +391,7 @@ def representative_posts():
 
 @bp.route("/profile")
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def profile():
     profile_data = get_citizen_profile(session.get("user_id"))
     return render_template("citizen/profile.html", profile=profile_data)
@@ -420,7 +420,7 @@ def vote_issue(issue_id):
 
 @bp.route("/issues/<issue_id>/resolve", methods=["POST"])
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def confirm_resolution(issue_id):
     from services.issue_service import citizen_confirm_resolution
 
@@ -525,7 +525,7 @@ def add_issue_comment(issue_id):
 
 @bp.route("/issues/<issue_id>/feedback", methods=["POST"])
 @login_required
-@role_required("CITIZEN")
+@role_required("CITIZEN","OPPOSITION_REP")
 def submit_issue_feedback(issue_id):
 
     rating = request.form.get("rating")

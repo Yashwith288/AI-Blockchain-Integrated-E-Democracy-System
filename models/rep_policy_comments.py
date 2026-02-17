@@ -27,6 +27,8 @@ def get_policy_comments(post_id):
         {"post_id": post_id}
     ) or []
     post=get_policy_post_by_id(post_id)
+    print(post["constituency_id"])
+    print(post["election_id"])
     rep=get_rep_by_election_id_constituency_id(post["election_id"],post["constituency_id"])
     user_id = session.get("user_id")
 
