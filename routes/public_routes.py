@@ -12,4 +12,7 @@ def election_schedule():
     )
 @bp.route("/")
 def landing():
-    return render_template("public/landing.html")
+    elections = get_all_elections()
+    return render_template("public/landing.html",elections=elections)
+
+

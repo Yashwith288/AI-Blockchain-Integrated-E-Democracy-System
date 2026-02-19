@@ -13,6 +13,45 @@
             from the electoral roll.
         </p>
     </div>
+    <form method="POST" action="{{ url_for('election_commission.reset_verification') }}">
+    <button class="btn-warning">
+        Mark All Voters Unverified
+    </button>
+</form>
+
+<h3>Publish Electoral Roll</h3>
+
+<div class="form-group">
+    <label>Select Election</label>
+    <select id="rollElectionSelect" required>
+        <option value="">Select Election</option>
+        {% for e in elections %}
+            <option value="{{ e.id }}">
+                {{ e.election_name }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- Draft Roll Form -->
+<form method="POST"
+      id="draftRollForm"
+      action="">
+    <button class="btn-secondary">
+        Publish Draft Roll
+    </button>
+</form>
+
+<!-- Final Roll Form -->
+<form method="POST"
+      id="finalRollForm"
+      action="">
+    <button class="btn-primary">
+        Publish Final Roll
+    </button>
+</form>
+
+
 
     <section class="form-section">
         <h3>Add New Voter</h3>
@@ -42,9 +81,22 @@
                 <textarea name="address" required></textarea>
             </div>
             <div class="form-group">
-                <label>Booth ID</label>
-                <input name="booth_id" required>
-            </div>
+    <label>Booth</label>
+    <select name="booth_id" required>
+        <option value="">Select Booth</option>
+        {% for b in booths %}
+            <option value="{{ b.id }}">
+                {{ b.booth_name or b.id }}
+            </option>
+        {% endfor %}
+    </select>
+</div>
+
+            <div class="form-group">
+    <label>Email</label>
+    <input type="email" name="email" required>
+</div>
+
             <button class="btn-primary">Add Voter</button>
         </form>
     </section>
@@ -63,30 +115,123 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for voter in voters %}
-                        <tr>
-                            <td>{{ voter.full_name }}</td>
-                            <td>{{ voter.voter_id_number }}</td>
-                            <td>{{ voter.booth_id }}</td>
-                            <td>
-                                {{ "Active" if voter.is_active else "Inactive" }}
-                            </td>
-                            <td>
-                                {% if voter.is_active %}
-                                <form method="POST" action="{{ url_for('election_commission.remove_voter', voter_id=voter.id) }}">
-                                    <button class="btn-danger">Remove</button>
-                                </form>
-                                {% else %}
-                                    <span class="text-muted">Removed</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
+    {% for voter in voters %}
+
+        <!-- Normal row -->
+        <tr>
+            <td>{{ voter.full_name }}</td>
+            <td>{{ voter.voter_id_number }}</td>
+            <td>{{ voter.booth_id }}</td>
+            <td>
+                {{ "Active" if voter.is_active else "Inactive" }}
+            </td>
+            <td>
+
+    <!-- Edit always allowed -->
+    <button type="button"
+            class="btn-secondary"
+            onclick="toggleEdit('{{ voter.id }}')">
+        Edit
+    </button>
+
+    {% if voter.is_active %}
+        <!-- Remove only if active -->
+        <form method="POST"
+              action="{{ url_for('election_commission.remove_voter', voter_id=voter.id) }}"
+              style="display:inline;">
+            <button class="btn-danger">Remove</button>
+        </form>
+    {% else %}
+        <span class="text-muted">Inactive</span>
+    {% endif %}
+
+</td>
+
+
+        </tr>
+
+        <!-- Hidden edit row -->
+        <tr id="edit-row-{{ voter.id }}" style="display:none;background:#f9fafb;">
+    <td colspan="5">
+
+        <form method="POST"
+              action="{{ url_for('election_commission.update_voter', voter_id=voter.id) }}">
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+
+                <input name="full_name"
+                       value="{{ voter.full_name }}"
+                       placeholder="Full Name"
+                       required>
+
+                <input name="address"
+                       value="{{ voter.address }}"
+                       placeholder="Address"
+                       required>
+
+                <select name="booth_id" required>
+    {% for b in booths %}
+        <option value="{{ b.id }}"
+            {{ "selected" if b.id == voter.booth_id else "" }}>
+            {{ b.booth_name or b.id }}
+        </option>
+    {% endfor %}
+</select>
+
+
+                <!-- Status dropdown -->
+                <select name="is_active">
+                    <option value="true" {{ "selected" if voter.is_active else "" }}>
+                        Active
+                    </option>
+                    <option value="false" {{ "selected" if not voter.is_active else "" }}>
+                        Inactive
+                    </option>
+                </select>
+
+                <button class="btn-primary">Save</button>
+
+            </div>
+
+        </form>
+
+    </td>
+</tr>
+
+
+    {% endfor %}
+</tbody>
+
             </table>
         {% else %}
             <p>No voters found.</p>
         {% endif %}
     </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const select = document.getElementById("rollElectionSelect");
+const draftForm = document.getElementById("draftRollForm");
+const finalForm = document.getElementById("finalRollForm");
+
+select.addEventListener("change", () => {
+    const id = select.value;
+
+    if (!id) {
+        draftForm.action = "";
+        finalForm.action = "";
+        return;
+    }
+
+    draftForm.action = `/commission/ero/roll/${id}/publish-draft`;
+    finalForm.action = `/commission/ero/roll/${id}/publish-final`;
+});
+function toggleEdit(id) {
+    const row = document.getElementById(`edit-row-${id}`);
+    row.style.display = row.style.display === "none" ? "table-row" : "none";
+}
+
+</script>
 {% endblock %}

@@ -497,17 +497,50 @@
             <!-- Section 3: Schedule -->
             <div class="form-section">
                 <div class="form-section-label">03 · Schedule</div>
+
+                <!-- Voting Window -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="start_time">Start Date &amp; Time</label>
+                        <label for="start_time">Voting Start</label>
                         <input type="datetime-local" id="start_time" name="start_time" required>
                     </div>
                     <div class="form-group">
-                        <label for="end_time">End Date &amp; Time</label>
+                        <label for="end_time">Voting End</label>
                         <input type="datetime-local" id="end_time" name="end_time" required>
                     </div>
                 </div>
+
+                <!-- Nomination Deadline -->
+                <div class="form-row" style="margin-top:1.2rem;">
+                    <div class="form-group">
+                        <label for="nomination_deadline">Nomination Deadline</label>
+                        <input type="datetime-local"
+                            id="nomination_deadline"
+                            name="nomination_deadline"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="draft_roll_publish_at">Draft Electoral Roll Publish</label>
+                        <input type="datetime-local"
+                            id="draft_roll_publish_at"
+                            name="draft_roll_publish_at"
+                            required>
+                    </div>
+                </div>
+
+                <!-- Final Roll Publish -->
+                <div class="form-row" style="margin-top:1.2rem;">
+                    <div class="form-group">
+                        <label for="final_roll_publish_at">Final Electoral Roll Publish</label>
+                        <input type="datetime-local"
+                            id="final_roll_publish_at"
+                            name="final_roll_publish_at"
+                            required>
+                    </div>
+                </div>
+
             </div>
+
 
             <!-- Section 4: Constituencies -->
             <div class="form-section">

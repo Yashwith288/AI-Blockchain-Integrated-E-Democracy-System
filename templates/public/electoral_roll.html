@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% set title = "Public Electoral Roll" %}
+
+{% block content %}
+<div class="public-roll">
+
+    <h2>Public Electoral Roll</h2>
+
+    <!-- Election Selection -->
+    <div class="form-group">
+        <label>Select Election</label>
+        <select id="electionSelect">
+            <option value="">Select Election</option>
+            {% for e in elections %}
+                {% if e.draft_roll_released or e.final_roll_released %}
+                <option value="{{ e.id }}">
+                    {{ e.election_name }}
+                </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Constituency Selection -->
+    <div class="form-group">
+        <label>Select Constituency</label>
+        <select id="constituencySelect" disabled>
+            <option>Select election first</option>
+        </select>
+    </div>
+
+    <button id="loadRollBtn" class="btn-primary" disabled>
+        Load Electoral Roll
+    </button>
+
+    <!-- Roll Header -->
+    <div id="rollHeader" style="margin-top:30px;"></div>
+
+    <!-- Roll Table -->
+    <div id="rollTable" style="margin-top:20px;"></div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+const electionSelect = document.getElementById("electionSelect");
+const constSelect = document.getElementById("constituencySelect");
+const btn = document.getElementById("loadRollBtn");
+const tableDiv = document.getElementById("rollTable");
+const headerDiv = document.getElementById("rollHeader");
+
+
+// Fetch constituencies for election
+electionSelect.addEventListener("change", async () => {
+
+    const electionId = electionSelect.value;
+    if (!electionId) return;
+
+    const res = await fetch(`/commission/api/constituencies/${electionId}`);
+    const data = await res.json();
+
+    constSelect.innerHTML = "<option value=''>Select Constituency</option>";
+
+    data.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.constituency_name;
+        constSelect.appendChild(opt);
+    });
+
+    constSelect.disabled = false;
+});
+
+constSelect.addEventListener("change", () => {
+    btn.disabled = !constSelect.value;
+});
+
+
+// Load roll via API
+btn.addEventListener("click", async () => {
+
+    const electionId = electionSelect.value;
+    const constId = constSelect.value;
+
+    const res = await fetch(`/commission/api/public-roll/${electionId}/${constId}`);
+    const data = await res.json();
+
+    if (data.error) {
+        headerDiv.innerHTML = `<p style="color:red">${data.error}</p>`;
+        tableDiv.innerHTML = "";
+        return;
+    }
+
+    // Header
+    headerDiv.innerHTML = `
+        <h3>${data.election_name}</h3>
+        <p style="font-weight:600;color:${data.is_final ? "green":"orange"}">
+            ${data.is_final ? "FINAL ELECTORAL ROLL" : "DRAFT ELECTORAL ROLL"}
+        </p>
+    `;
+
+    // Table
+    let rows = data.voters.map(v => `
+        <tr>
+            <td>${v.full_name}</td>
+            <td>${v.voter_id_number}</td>
+            <td>${v.booth_id}</td>
+        </tr>
+    `).join("");
+
+    tableDiv.innerHTML = `
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Voter ID</th>
+                    <th>Booth</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+});
+
+</script>
+{% endblock %}

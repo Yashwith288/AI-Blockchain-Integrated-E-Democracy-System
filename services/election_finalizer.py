@@ -8,15 +8,13 @@ def finalize_election_if_needed(election):
     - Marks election COMPLETED
     - Assigns representatives
     """
-
+    print(election["election_name"])
     if election["status"] == "COMPLETED":
         return  # already done
 
     now = datetime.utcnow().isoformat()
-
     if now <= election["_end_time"]:
         return  # election still running
-
     # 1️⃣ Mark election completed
     mark_election_completed(election["id"])
 

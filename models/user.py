@@ -3,6 +3,8 @@ from utils.helpers import generate_uuid, utc_now
 from utils.helpers import normalize_role
 from models.voter import get_voter_user_mapping_by_user
 from models.voter import get_voter_by_id
+from utils.security import hash_password
+
 
 
 # -----------------------------
@@ -18,19 +20,18 @@ CITIZEN_ALIAS_TABLE = "citizen_alias"
 # -----------------------------
 
 def create_user(
+    id: str,
     email: str,
-    password_hash: str,
     role: str,
-    state_id: str = None,
-    district_id: str = None,
-    constituency_id: str = None,
-    booth_id: str = None
+    state_id=None,
+    district_id=None,
+    constituency_id=None,
+    booth_id=None
 ):
     payload = {
-        "id": generate_uuid(),
+        "id": id,   # use Supabase auth ID
         "email": email,
-        "password_hash": password_hash,
-        "role": normalize_role(role),
+        "role": role,
         "state_id": state_id,
         "district_id": district_id,
         "constituency_id": constituency_id,
@@ -38,7 +39,12 @@ def create_user(
         "is_active": True,
         "created_at": utc_now().isoformat()
     }
-    return insert_record(USERS_TABLE, payload, use_admin=True)
+
+    return insert_record("users", payload, use_admin=True)
+
+
+    return insert_record("users", payload, use_admin=True)
+
 
 
 def get_user_by_id(user_id: str):

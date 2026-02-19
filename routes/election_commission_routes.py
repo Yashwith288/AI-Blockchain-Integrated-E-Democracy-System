@@ -15,10 +15,13 @@ from models.voter import (
 from models.user import get_users_by_role
 from models.candidate import get_candidates_by_constituency, create_candidate
 from datetime import datetime
-from models.election import add_constituency_to_election
+from models.election import add_constituency_to_election,is_roll_locked
 from models.constituency import get_constituencies_by_state
 from services.election_finalizer import finalize_election_if_needed
-from models.election import get_state_name_by_state_id
+from models.election import get_state_name_by_state_id,get_election_by_id
+from models.booth import get_booths_by_constituency
+
+
 
 bp = Blueprint("election_commission", __name__, url_prefix="/commission")
 
@@ -51,7 +54,9 @@ def dashboard():
 
     if role == "ERO":
         voters = get_voters_by_constituency(session.get("constituency_id"))
-        return render_template("election_commission/ero/voter_management.html", voters=voters)
+        elections = get_elections_by_state(session.get("state_id"))
+        booths = get_booths_by_constituency(session.get("constituency_id"))
+        return render_template("election_commission/ero/voter_management.html", voters=voters,elections=elections,booths=booths)
 
     if role == "BLO":
         voters = get_voters_by_booth(session.get("booth_id"))
@@ -80,8 +85,13 @@ def create_election():
                 state_id=session.get("state_id"),
                 start_time=request.form.get("start_time"),
                 end_time=request.form.get("end_time"),
+                nomination_deadline=request.form.get("nomination_deadline"),
+                draft_roll_publish_at=request.form.get("draft_roll_publish_at"),
+                final_roll_publish_at=request.form.get("final_roll_publish_at"),
                 created_by=session.get("user_id")
             )
+
+
 
             election_id = election[0]["id"]
 
@@ -180,25 +190,53 @@ def manage_ro():
 @login_required
 @role_required("RO")
 def nomination_management():
+    elections = get_elections_by_state(session.get("state_id"))
     candidates = get_candidates_by_constituency(session.get("constituency_id"))
-    return render_template("election_commission/ro/nomination_management.html", candidates=candidates)
+    return render_template(
+        "election_commission/ro/nomination_management.html",
+        candidates=candidates,
+        elections=elections
+    )
 
 @bp.route("/ro/nominations/add", methods=["POST"])
 @login_required
 @role_required("RO")
 def add_candidate():
     try:
+        election_id = request.form.get("election_id")
+
+        # Fetch election to check deadline
+        election = get_election_by_id(election_id)
+
+        if not election:
+            flash("Invalid election", "error")
+            return redirect(url_for("election_commission.nomination_management"))
+
+        # Parse deadline
+        deadline = election.get("nomination_deadline")
+
+        if deadline:
+            deadline_dt = datetime.fromisoformat(str(deadline))
+
+            if datetime.utcnow() > deadline_dt:
+                flash("Nomination deadline has passed. No more candidates can be added.", "error")
+                return redirect(url_for("election_commission.nomination_management"))
+
+        # Create candidate if deadline not crossed
         create_candidate(
             user_id=request.form.get("user_id"),
-            election_id=request.form.get("election_id"),
+            election_id=election_id,
             constituency_id=session.get("constituency_id"),
             party_name=request.form.get("party_name")
         )
-        flash("Candidate added (offline nomination verified)", "success")
+
+        flash("Candidate added successfully", "success")
+
     except Exception as e:
         flash(str(e), "error")
 
     return redirect(url_for("election_commission.nomination_management"))
+
 
 # =====================================================
 # ERO – VOTER MANAGEMENT
@@ -209,7 +247,50 @@ def add_candidate():
 @role_required("ERO")
 def add_voter():
     try:
-        create_voter(
+        from models.voter import create_voter, map_voter_to_user
+        from models.user import create_user
+        from utils.helpers import generate_temp_password
+        from supabase_db.client import supabase_admin as supabase   # adjust if your import path differs
+
+        email = request.form.get("email")
+        booth_id = request.form.get("booth_id")
+
+        # --------------------------------------------------
+        # 1️⃣ Generate temporary password
+        # --------------------------------------------------
+        temp_password = generate_temp_password()
+
+        # --------------------------------------------------
+        # 2️⃣ Create Supabase Auth user
+        # --------------------------------------------------
+        auth_response = supabase.auth.admin.create_user({
+            "email": email,
+            "password": temp_password,
+            "email_confirm": True
+        })
+
+        if not auth_response or not auth_response.user:
+            raise Exception("Failed to create authentication account")
+
+        auth_user_id = auth_response.user.id
+
+        # --------------------------------------------------
+        # 3️⃣ Insert into USERS table (authorization layer)
+        # --------------------------------------------------
+        create_user(
+            id=auth_user_id,
+            email=email,
+            role="CITIZEN",
+            state_id=session.get("state_id"),
+            district_id=session.get("district_id"),
+            constituency_id=session.get("constituency_id"),
+            booth_id=booth_id
+        )
+
+        # --------------------------------------------------
+        # 4️⃣ Create VOTER row (electoral data)
+        # --------------------------------------------------
+        voter = create_voter(
             full_name=request.form.get("full_name"),
             guardian_name=request.form.get("guardian_name"),
             gender=request.form.get("gender"),
@@ -218,13 +299,29 @@ def add_voter():
             state_id=session.get("state_id"),
             district_id=session.get("district_id"),
             constituency_id=session.get("constituency_id"),
-            booth_id=request.form.get("booth_id")
+            booth_id=booth_id
         )
-        flash("Voter added successfully", "success")
+
+        voter_id = voter[0]["id"]
+
+        # --------------------------------------------------
+        # 5️⃣ Map voter ↔ user
+        # --------------------------------------------------
+        map_voter_to_user(voter_id, auth_user_id)
+
+        # --------------------------------------------------
+        # 6️⃣ Success message
+        # --------------------------------------------------
+        flash(
+            f"Voter created successfully. Temporary password: {temp_password}",
+            "success"
+        )
+
     except Exception as e:
         flash(str(e), "error")
 
     return redirect(url_for("election_commission.dashboard"))
+
 
 @bp.route("/ero/voters/update/<voter_id>", methods=["POST"])
 @login_required
@@ -234,24 +331,73 @@ def update_voter(voter_id):
         update_voter_details(voter_id, {
             "full_name": request.form.get("full_name"),
             "address": request.form.get("address"),
-            "booth_id": request.form.get("booth_id")
+            "booth_id": request.form.get("booth_id"),
+            "is_active": True,
+            "is_verified": False,
+            "verified_at": None,
+            "verified_by": None
         })
+
         flash("Voter updated", "success")
     except Exception as e:
         flash(str(e), "error")
 
+
     return redirect(url_for("election_commission.dashboard"))
 
-@bp.route("/ero/voters/remove/<voter_id>")
+@bp.route("/ero/voters/remove/<voter_id>", methods=["POST"])
 @login_required
 @role_required("ERO")
 def remove_voter(voter_id):
     try:
         deactivate_voter(voter_id)
+        update_voter_details(voter_id, {
+            "is_verified": False,
+            "verified_at": None,
+            "verified_by": None
+        })
+
         flash("Voter removed", "success")
     except Exception as e:
         flash(str(e), "error")
 
+    return redirect(url_for("election_commission.dashboard"))
+
+@bp.route("/ero/voters/reset-verification", methods=["POST"])
+@login_required
+@role_required("ERO")
+def reset_verification():
+    voters = get_voters_by_constituency(session.get("constituency_id"))
+
+    for v in voters:
+        update_voter_details(v["id"], {
+            "is_verified": False,
+            "verified_at": None,
+            "verified_by": None
+        })
+
+    flash("All voters marked for re-verification", "success")
+    return redirect(url_for("election_commission.dashboard"))
+
+@bp.route("/ero/roll/<election_id>/publish-draft", methods=["POST"])
+@login_required
+@role_required("ERO")
+def publish_draft_roll(election_id):
+    from models.election import update_election
+
+    update_election(election_id, {"draft_roll_released": True})
+    flash("Draft Electoral Roll released to public", "success")
+    return redirect(url_for("election_commission.dashboard"))
+
+
+@bp.route("/ero/roll/<election_id>/publish-final", methods=["POST"])
+@login_required
+@role_required("ERO")
+def publish_final_roll(election_id):
+    from models.election import update_election
+
+    update_election(election_id, {"final_roll_released": True})
+    flash("Final Electoral Roll released to public", "success")
     return redirect(url_for("election_commission.dashboard"))
 
 # =====================================================
@@ -295,3 +441,74 @@ def view_results(election_id):
         results=results
     )
 
+@bp.route("/public/roll/<election_id>/<constituency_id>")
+def view_public_roll(election_id, constituency_id):
+
+    from models.election import get_election_by_id
+    from models.voter import get_voters_by_constituency
+
+    election = get_election_by_id(election_id)
+
+    if not election:
+        return "Election not found", 404
+
+    if not election.get("draft_roll_released") and not election.get("final_roll_released"):
+        return "Electoral roll not published yet", 403
+
+    voters = get_voters_by_constituency(constituency_id)
+
+    return render_template(
+        "public/electoral_roll.html",
+        election=election,
+        voters=voters
+    )
+
+@bp.route("/public/roll")
+def public_roll_page():
+
+    from models.election import get_all_elections
+
+    elections = get_all_elections()
+
+    return render_template(
+        "public/electoral_roll.html",
+        elections=elections
+    )
+
+
+@bp.route("/api/public-roll/<election_id>/<constituency_id>")
+def api_public_roll(election_id, constituency_id):
+
+    from models.election import get_election_by_id
+    from models.voter import get_voters_by_constituency
+
+    election = get_election_by_id(election_id)
+
+    if not election:
+        return {"error": "Election not found"}
+
+    if not election.get("draft_roll_released") and not election.get("final_roll_released"):
+        return {"error": "Electoral roll not released yet"}
+
+    voters = get_voters_by_constituency(constituency_id)
+
+    return {
+        "election_name": election["election_name"],
+        "is_final": election.get("final_roll_released"),
+        "voters": voters
+    }
+
+@bp.route("/api/constituencies/<election_id>")
+def api_constituencies_for_election(election_id):
+
+    from models.election import get_election_by_id
+    from models.constituency import get_constituencies_by_state
+
+    election = get_election_by_id(election_id)
+
+    if not election:
+        return {"error": "Invalid election"}, 404
+
+    constituencies = get_constituencies_by_state(election["state_id"])
+
+    return constituencies

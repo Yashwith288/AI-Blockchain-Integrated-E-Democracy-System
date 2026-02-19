@@ -18,6 +18,9 @@ def create_state_election(
     state_id: str,
     start_time,
     end_time,
+    nomination_deadline,
+    draft_roll_publish_at,
+    final_roll_publish_at,
     created_by: str
 ):
     election = create_election(
@@ -26,8 +29,12 @@ def create_state_election(
         state_id=state_id,
         start_time=start_time,
         end_time=end_time,
+        nomination_deadline=nomination_deadline,
+        draft_roll_publish_at=draft_roll_publish_at,
+        final_roll_publish_at=final_roll_publish_at,
         created_by=created_by
     )
+
 
     create_audit_log(
         user_id=created_by,

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% set title = "View Electoral Roll" %}
+
+{% block content %}
+<div class="public-roll-select">
+
+    <h2>View Electoral Roll</h2>
+
+    <div class="form-group">
+        <label>Select Election</label>
+        <select id="electionSelect">
+            <option value="">Select Election</option>
+            {% for e in elections %}
+                {% if e.draft_roll_released or e.final_roll_released %}
+                <option value="{{ e.id }}" data-state="{{ e.state_id }}">
+                    {{ e.election_name }}
+                </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Select Constituency</label>
+        <select id="constituencySelect" disabled>
+            <option>Select election first</option>
+        </select>
+    </div>
+
+    <button id="viewRollBtn" class="btn-primary" disabled>
+        View Roll
+    </button>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+const electionSelect = document.getElementById("electionSelect");
+const constSelect = document.getElementById("constituencySelect");
+const btn = document.getElementById("viewRollBtn");
+
+// Fetch constituencies dynamically
+electionSelect.addEventListener("change", async () => {
+
+    const electionId = electionSelect.value;
+
+    if (!electionId) return;
+
+    const res = await fetch(`/commission/api/constituencies/${electionId}`);
+    const data = await res.json();
+
+    constSelect.innerHTML = "<option value=''>Select Constituency</option>";
+
+    data.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.constituency_name;
+        constSelect.appendChild(opt);
+    });
+
+    constSelect.disabled = false;
+});
+
+constSelect.addEventListener("change", () => {
+    btn.disabled = !constSelect.value;
+});
+
+btn.addEventListener("click", () => {
+    const e = electionSelect.value;
+    const c = constSelect.value;
+    window.location.href = `/commission/public/roll/${e}/${c}`;
+});
+
+</script>
+{% endblock %}

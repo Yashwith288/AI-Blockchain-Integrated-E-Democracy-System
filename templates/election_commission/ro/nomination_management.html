@@ -20,49 +20,56 @@
     <!-- =========================
          Add Candidate Form
     ========================== -->
+
     <section class="form-section">
-        <h3>Add Accepted Candidate</h3>
+    <h3>Add Accepted Candidate</h3>
 
-        <form method="POST" action="{{ url_for('election_commission.add_candidate') }}">
+    <form method="POST" action="{{ url_for('election_commission.add_candidate') }}">
 
-            <div class="form-group">
-                <label for="user_id">Candidate User ID</label>
-                <input
-                    type="text"
-                    id="user_id"
-                    name="user_id"
-                    placeholder="Enter candidate user ID"
-                    required
-                >
-            </div>
+        <!-- Election selection -->
+        <div class="form-group">
+            <label>Select Election</label>
+            <select id="election_select" name="election_id" required>
+                <option value="">Select Election</option>
+                {% for e in elections %}
+                    <option value="{{ e.id }}">
+                        {{ e.election_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
 
-            <div class="form-group">
-                <label for="party_name">Party Name</label>
-                <input
-                    type="text"
-                    id="party_name"
-                    name="party_name"
-                    placeholder="Eg: Indian National Congress"
-                    required
-                >
-            </div>
+        <p id="deadlineInfo" style="margin-top:10px;font-weight:600;color:#555;"></p>
 
-            <div class="form-group">
-                <label for="election_id">Election ID</label>
-                <input
-                    type="text"
-                    id="election_id"
-                    name="election_id"
-                    placeholder="Election ID"
-                    required
-                >
-            </div>
+        <div class="form-group">
+            <label for="user_id">Candidate User ID</label>
+            <input
+                type="text"
+                id="user_id"
+                name="user_id"
+                placeholder="Enter candidate user ID"
+                required
+            >
+        </div>
 
-            <button type="submit" class="btn-primary">
-                Add Candidate
-            </button>
-        </form>
-    </section>
+        <div class="form-group">
+            <label for="party_name">Party Name</label>
+            <input
+                type="text"
+                id="party_name"
+                name="party_name"
+                placeholder="Eg: Indian National Congress"
+                required
+            >
+        </div>
+
+        <button type="submit" class="btn-primary">
+            Add Candidate
+        </button>
+
+    </form>
+</section>
+
 
     <!-- =========================
          Accepted Candidates List
@@ -97,4 +104,25 @@
     </section>
 
 </div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const elections = {{ elections|tojson }};
+const select = document.getElementById("election_select");
+const info = document.getElementById("deadlineInfo");
+
+select.addEventListener("change", () => {
+    const e = elections.find(x => x.id === select.value);
+
+    if (!e || !e.nomination_deadline) {
+        info.textContent = "";
+        return;
+    }
+
+    const d = new Date(e.nomination_deadline);
+    info.textContent = "Nominations close: " + d.toLocaleString();
+});
+</script>
+
 {% endblock %}

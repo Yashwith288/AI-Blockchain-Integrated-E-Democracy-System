@@ -1,5 +1,6 @@
 from supabase_db.db import fetch_one, fetch_all, insert_record, update_record
 from utils.helpers import generate_uuid, utc_now, format_datetime
+from datetime import datetime
 
 
 # -----------------------------
@@ -20,7 +21,10 @@ def create_election(
     state_id: str,
     start_time,
     end_time,
-    created_by: str
+    created_by: str,
+    nomination_deadline,
+    draft_roll_publish_at,
+    final_roll_publish_at,
 ):
     payload = {
         "id": generate_uuid(),
@@ -29,6 +33,9 @@ def create_election(
         "state_id": state_id,
         "start_time": start_time.isoformat() if hasattr(start_time, "isoformat") else start_time,
         "end_time": end_time.isoformat() if hasattr(end_time, "isoformat") else end_time,
+        "nomination_deadline": nomination_deadline.isoformat() if hasattr(start_time, "isoformat") else start_time,
+        "draft_roll_publish_at": draft_roll_publish_at.isoformat() if hasattr(end_time, "isoformat") else end_time,
+        "final_roll_publish_at": final_roll_publish_at.isoformat() if hasattr(start_time, "isoformat") else start_time,
         "status": "Draft",
         "created_by": created_by,
         "approved_by": None,
@@ -198,3 +205,48 @@ def mark_election_completed(election_id: str):
 
 def get_district_name_by_district_id(district_id):
     return fetch_one("districts", {"id": district_id})
+
+def update_election(election_id, update_data):
+    return update_record(
+        "elections",
+        {"id": election_id},
+        update_data,
+        use_admin=True
+    )
+
+
+
+def parse_dt(value):
+    """
+    Accepts both ISO timestamps and human readable timestamps
+    """
+    if not value:
+        return None
+
+    # Try ISO first
+    try:
+        return datetime.fromisoformat(str(value))
+    except Exception:
+        pass
+
+    # Try your display format
+    try:
+        return datetime.strptime(str(value), "%d %b %Y, %I:%M %p")
+    except Exception:
+        return None
+
+
+def is_roll_locked(election):
+    if not election:
+        return False
+
+    final_dt = parse_dt(election.get("final_roll_publish_at"))
+    end_dt = parse_dt(election.get("end_time"))
+
+    if not final_dt or not end_dt:
+        return False
+
+    now = datetime.utcnow()
+    return final_dt <= now <= end_dt
+
+
