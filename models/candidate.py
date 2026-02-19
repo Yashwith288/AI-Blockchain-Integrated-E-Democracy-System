@@ -1,5 +1,5 @@
 from supabase_db.db import fetch_one, fetch_all, insert_record, update_record
-from utils.helpers import generate_uuid, utc_now
+from utils.helpers import generate_uuid, utc_now, format_datetime
 
 
 # -----------------------------
@@ -74,7 +74,9 @@ def get_candidates_by_constituency(constituency_id):
         result.append({
             "id": c["id"],
             "candidate_name": voter["full_name"],
-            "party_name": c["party_name"]
+            "party_name": c["party_name"],
+            "created_at":format_datetime(c["created_at"]),
+            "election_id":c["election_id"]
         })
 
     return result

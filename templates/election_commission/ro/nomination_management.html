@@ -1,128 +1,499 @@
 {% extends "base.html" %}
 {% set title = "Nomination Management" %}
 
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════
+   NOMINATION MANAGEMENT PAGE
+═══════════════════════════════════════════════════ */
+.nomination-page {
+    min-height: calc(100vh - var(--nav-h));
+    padding: 3rem 4rem 6rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── PAGE HEADER ─────────────────────────────── */
+.page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 3rem; padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    gap: 2rem; flex-wrap: wrap;
+}
+.page-breadcrumb {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none;
+    transition: color 0.2s; margin-bottom: 0.75rem;
+}
+.page-breadcrumb:hover { color: var(--indigo); }
+.page-breadcrumb svg { width: 10px; height: 10px; transition: transform 0.2s; }
+.page-breadcrumb:hover svg { transform: translateX(-2px); }
+.page-title {
+    font-family: var(--font-disp); font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 0.92; color: var(--text);
+}
+.page-title span { color: var(--indigo); }
+.page-title-sub {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); margin-top: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.page-title-sub::before { content: ''; width: 20px; height: 1px; background: var(--indigo); }
+.offline-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--warm); background: var(--warm-dim);
+    border: 1px solid rgba(245,158,11,0.25); padding: 0.5rem 1rem;
+    align-self: flex-start;
+}
+.offline-badge svg { width: 11px; height: 11px; stroke: var(--warm); fill: none; stroke-width: 1.8; }
+
+/* ── BODY GRID ───────────────────────────────── */
+.nomination-grid {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* ── FORM PANEL ──────────────────────────────── */
+.form-panel {
+    border: 1px solid var(--border); background: #fff; overflow: hidden;
+    position: sticky; top: calc(var(--nav-h) + 2rem);
+}
+.form-panel-head {
+    padding: 1rem 1.5rem; background: var(--ink-2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.form-panel-head svg { width: 12px; height: 12px; stroke: var(--indigo); fill: none; stroke-width: 1.5; }
+.form-panel-body { padding: 1.75rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.form-group label {
+    font-family: var(--font-mono); font-size: 0.63rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.form-group input,
+.form-group select {
+    font-family: var(--font-body); font-size: 0.88rem;
+    color: var(--text); background: var(--ink);
+    border: 1px solid rgba(30,40,80,0.15);
+    padding: 0.78rem 1rem; outline: none; width: 100%;
+    -webkit-appearance: none; appearance: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.form-group input:focus,
+.form-group select:focus {
+    border-color: var(--indigo); background: #fff;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.08);
+}
+.form-group input::placeholder { color: var(--muted); opacity: 0.5; }
+.select-wrap { position: relative; }
+.select-wrap::after {
+    content: ''; position: absolute; right: 1rem; top: 50%;
+    transform: translateY(-50%); width: 0; height: 0;
+    border-left: 4px solid transparent; border-right: 4px solid transparent;
+    border-top: 5px solid var(--muted); pointer-events: none;
+    transition: border-top-color 0.2s;
+}
+.select-wrap:focus-within::after { border-top-color: var(--indigo); }
+
+/* Deadline pill */
+.deadline-pill {
+    display: none; align-items: center; gap: 0.6rem;
+    font-family: var(--font-mono); font-size: 0.63rem;
+    letter-spacing: 0.06em; color: var(--warm);
+    background: var(--warm-dim); border: 1px solid rgba(245,158,11,0.2);
+    padding: 0.5rem 0.85rem;
+}
+.deadline-pill.visible { display: flex; }
+.deadline-pill svg { width: 11px; height: 11px; stroke: var(--warm); fill: none; stroke-width: 1.8; flex-shrink: 0; }
+
+.form-panel-body .btn-primary {
+    clip-path: none; border-radius: 0;
+    justify-content: center; width: 100%;
+    padding: 0.9rem; font-size: 0.75rem; margin-top: 0.25rem;
+}
+
+.form-note {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    padding: 1rem 1.5rem; border-top: 1px solid var(--border); background: var(--ink-2);
+}
+.form-note-icon {
+    width: 20px; height: 20px; flex-shrink: 0;
+    background: var(--warm-dim); border: 1px solid rgba(245,158,11,0.2);
+    display: grid; place-items: center; font-size: 0.6rem; margin-top: 1px;
+}
+.form-note p {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.04em; color: var(--muted); line-height: 1.65;
+}
+.form-note p strong { color: var(--text); }
+
+/* ── CANDIDATES TABLE SIDE ───────────────────── */
+.candidates-panel { display: flex; flex-direction: column; }
+
+.candidates-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; padding: 1rem 1.25rem;
+    background: var(--ink-2); border: 1px solid var(--border); border-bottom: none;
+    flex-wrap: wrap;
+}
+.toolbar-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.toolbar-label {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.toolbar-label::before { content: ''; width: 12px; height: 1px; background: var(--indigo); }
+
+.search-wrap { position: relative; }
+.search-wrap svg {
+    position: absolute; left: 0.75rem; top: 50%;
+    transform: translateY(-50%); width: 12px; height: 12px;
+    stroke: var(--muted); fill: none; stroke-width: 1.5; pointer-events: none;
+}
+.table-search {
+    font-family: var(--font-mono); font-size: 0.72rem;
+    color: var(--text); background: #fff;
+    border: 1px solid rgba(30,40,80,0.15);
+    padding: 0.55rem 0.9rem 0.55rem 2rem;
+    outline: none; width: 200px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.table-search:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+.table-search::placeholder { opacity: 0.45; }
+
+/* Election filter native select (small) */
+.election-filter-select {
+    font-family: var(--font-mono); font-size: 0.66rem;
+    letter-spacing: 0.04em; color: var(--text);
+    background: #fff; border: 1px solid rgba(30,40,80,0.15);
+    padding: 0.55rem 2rem 0.55rem 0.75rem;
+    outline: none; cursor: pointer; max-width: 210px;
+    -webkit-appearance: none; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 0.65rem center;
+    transition: border-color 0.2s;
+}
+.election-filter-select:focus { border-color: var(--indigo); }
+
+/* ── TABLE ───────────────────────────────────── */
+.table-wrap { border: 1px solid var(--border); overflow: hidden; overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead { background: var(--ink-2); border-bottom: 1px solid var(--border); }
+.data-table th {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 400;
+    padding: 0.85rem 1.25rem; text-align: left;
+    border-right: 1px solid var(--border);
+}
+.data-table th:last-child { border-right: none; }
+.data-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--indigo-dim); }
+.data-table td {
+    padding: 1rem 1.25rem; color: var(--text);
+    border-right: 1px solid var(--border); vertical-align: middle;
+}
+.data-table td:last-child { border-right: none; }
+
+.row-index { font-family: var(--font-mono); font-size: 0.6rem; color: rgba(107,114,128,0.4); width: 36px; }
+
+.candidate-cell { display: flex; align-items: center; gap: 0.75rem; }
+.candidate-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: var(--indigo-dim); border: 1px solid rgba(79,70,229,0.2);
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    font-weight: 700; color: var(--indigo); text-transform: uppercase;
+}
+.candidate-name { font-size: 0.88rem; color: var(--text); }
+.candidate-id { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 0.04em; }
+
+.party-tag {
+    display: inline-flex;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.08em; color: var(--text);
+    background: var(--ink-2); border: 1px solid var(--border);
+    padding: 0.25rem 0.6rem;
+}
+.election-tag {
+    display: inline-flex;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.06em; color: var(--indigo);
+    background: var(--indigo-dim); border: 1px solid rgba(79,70,229,0.15);
+    padding: 0.2rem 0.55rem; max-width: 160px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.date-cell { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); }
+
+.table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    border: 1px solid var(--border); border-top: none;
+    background: var(--ink-2); flex-wrap: wrap; gap: 0.5rem;
+}
+.table-footer-info {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.table-footer-info span { color: var(--indigo); }
+
+/* Empty state */
+.empty-state {
+    border: 1px solid var(--border); padding: 4rem 2rem;
+    text-align: center; background: var(--ink-2);
+}
+.empty-icon {
+    width: 52px; height: 52px; background: var(--indigo-dim);
+    border: 1px solid rgba(79,70,229,0.2);
+    display: grid; place-items: center; margin: 0 auto 1.25rem;
+}
+.empty-icon svg { width: 22px; height: 22px; stroke: var(--indigo); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.empty-title { font-family: var(--font-disp); font-size: 1.6rem; color: var(--text); margin-bottom: 0.4rem; }
+.empty-sub { font-family: var(--font-mono); font-size: 0.63rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* ── RESPONSIVE ──────────────────────────────── */
+@media (max-width: 1024px) {
+    .nomination-page { padding: 2rem 1.5rem 4rem; }
+    .nomination-grid { grid-template-columns: 1fr; }
+    .form-panel { position: static; }
+    .candidates-toolbar { flex-direction: column; align-items: flex-start; }
+    .table-search { width: 100%; }
+    .election-filter-select { max-width: 100%; width: 100%; }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
-<div class="ec-nomination">
+<div class="nomination-page">
 
-    <h2>Candidate Nomination Management</h2>
-
-    <!-- =========================
-         Info Note
-    ========================== -->
-    <div class="info-note">
-        <p>
-            <strong>Note:</strong> Nomination verification is conducted
-            <em>offline</em>. Only candidates whose nominations have been
-            accepted offline should be added here.
-        </p>
+    <!-- ── PAGE HEADER ────────────────────────────── -->
+    <div class="page-header reveal">
+        <div>
+            <a href="{{ url_for('election_commission.dashboard') }}" class="page-breadcrumb">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 12L6 8l4-4"/></svg>
+                RO Dashboard
+            </a>
+            <h1 class="page-title">Nomination<br><span>Management</span></h1>
+            <div class="page-title-sub">Returning Officer · Candidate Registration</div>
+        </div>
+        <div class="offline-badge">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Offline Verified Only
+        </div>
     </div>
 
-    <!-- =========================
-         Add Candidate Form
-    ========================== -->
+    <!-- ── BODY GRID ──────────────────────────────── -->
+    <div class="nomination-grid">
 
-    <section class="form-section">
-    <h3>Add Accepted Candidate</h3>
+        <!-- ── LEFT: ADD FORM ────────────────────── -->
+        <div class="form-panel reveal">
+            <div class="form-panel-head">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Accepted Candidate
+            </div>
 
-    <form method="POST" action="{{ url_for('election_commission.add_candidate') }}">
+            <form method="POST" action="{{ url_for('election_commission.add_candidate') }}" class="form-panel-body">
 
-        <!-- Election selection -->
-        <div class="form-group">
-            <label>Select Election</label>
-            <select id="election_select" name="election_id" required>
-                <option value="">Select Election</option>
-                {% for e in elections %}
-                    <option value="{{ e.id }}">
-                        {{ e.election_name }}
-                    </option>
-                {% endfor %}
-            </select>
+                <div class="form-group">
+                    <label>Select Election</label>
+                    <div class="select-wrap">
+                        <select id="election_select" name="election_id" required>
+                            <option value="">Choose an election…</option>
+                            {% for e in elections %}
+                                <option value="{{ e.id }}">{{ e.election_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="deadline-pill" id="deadlinePill">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span id="deadlineText">—</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="user_id">Candidate User ID</label>
+                    <input
+                        type="text" id="user_id" name="user_id"
+                        placeholder="Enter candidate user ID"
+                        required autocomplete="off"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="party_name">Party Name</label>
+                    <input
+                        type="text" id="party_name" name="party_name"
+                        placeholder="e.g. Indian National Congress"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    Add Candidate →
+                </button>
+
+            </form>
+
+            <div class="form-note">
+                <div class="form-note-icon">!</div>
+                <p>
+                    <strong>Offline verification only.</strong>
+                    Only add candidates whose nominations have been accepted offline. This is permanently recorded.
+                </p>
+            </div>
         </div>
 
-        <p id="deadlineInfo" style="margin-top:10px;font-weight:600;color:#555;"></p>
+        <!-- ── RIGHT: CANDIDATES LIST ────────────── -->
+        <div class="candidates-panel reveal">
 
-        <div class="form-group">
-            <label for="user_id">Candidate User ID</label>
-            <input
-                type="text"
-                id="user_id"
-                name="user_id"
-                placeholder="Enter candidate user ID"
-                required
-            >
-        </div>
+            {% if candidates and candidates|length > 0 %}
 
-        <div class="form-group">
-            <label for="party_name">Party Name</label>
-            <input
-                type="text"
-                id="party_name"
-                name="party_name"
-                placeholder="Eg: Indian National Congress"
-                required
-            >
-        </div>
-
-        <button type="submit" class="btn-primary">
-            Add Candidate
-        </button>
-
-    </form>
-</section>
-
-
-    <!-- =========================
-         Accepted Candidates List
-    ========================== -->
-    <section class="table-section">
-        <h3>Accepted Candidates</h3>
-
-        {% if candidates and candidates|length > 0 %}
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Candidate User ID</th>
-                        <th>Party</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in candidates %}
-                        <tr>
-                            <td>{{ c.user_id }}</td>
-                            <td>{{ c.party_name }}</td>
-                            <td>{{ c.status }}</td>
-                            <td>{{ c.created_at }}</td>
-                        </tr>
+            <div class="candidates-toolbar">
+                <div class="toolbar-left">
+                    <span class="toolbar-label">Accepted Candidates</span>
+                    <div class="search-wrap">
+                        <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4"/><path d="M9.5 9.5l3 3"/></svg>
+                        <input
+                            class="table-search" id="candidateSearch" type="text"
+                            placeholder="Search name or party…" autocomplete="off"
+                        >
+                    </div>
+                </div>
+                <select class="election-filter-select" id="electionFilter">
+                    <option value="">All Elections</option>
+                    {% for e in elections %}
+                        <option value="{{ e.id }}">{{ e.election_name }}</option>
                     {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No candidates added yet.</p>
-        {% endif %}
-    </section>
+                </select>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="row-index">#</th>
+                            <th>Candidate</th>
+                            <th>Party</th>
+                            <th>Election</th>
+                            <th>Added At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidateTableBody">
+                        {% for c in candidates %}
+                        <tr
+                            data-search="{{ c.candidate_name|lower }} {{ c.party_name|lower }}"
+                            data-election="{{ c.election_id }}"
+                        >
+                            <td class="row-index">{{ loop.index }}</td>
+                            <td>
+                                <div class="candidate-cell">
+                                    <div class="candidate-avatar">{{ (c.candidate_name or '?')[0] }}</div>
+                                    <div>
+                                        <div class="candidate-name">{{ c.candidate_name }}</div>
+                                        <div class="candidate-id">ID: {{ c.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="party-tag">{{ c.party_name }}</span></td>
+                            <td>
+                                {% for e in elections %}
+                                    {% if e.id == c.election_id %}
+                                        <span class="election-tag" title="{{ e.election_name }}">{{ e.election_name }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                            <td class="date-cell">{{ c.created_at }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="table-footer">
+                <span class="table-footer-info">
+                    Showing <span id="visibleCount">{{ candidates|length }}</span> of {{ candidates|length }} candidates
+                </span>
+                <span class="table-footer-info">RO · Nomination Portal</span>
+            </div>
+
+            {% else %}
+
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                </div>
+                <div class="empty-title">No Candidates Yet</div>
+                <div class="empty-sub">Use the form to add offline-verified candidates</div>
+            </div>
+
+            {% endif %}
+
+        </div>
+    </div>
 
 </div>
-
 {% endblock %}
+
+
 {% block extra_js %}
 <script>
-const elections = {{ elections|tojson }};
-const select = document.getElementById("election_select");
-const info = document.getElementById("deadlineInfo");
+(function () {
+    /* ── Deadline pill ─────────────────────────── */
+    const elections    = {{ elections | tojson }};
+    const elSelect     = document.getElementById('election_select');
+    const deadlinePill = document.getElementById('deadlinePill');
+    const deadlineText = document.getElementById('deadlineText');
 
-select.addEventListener("change", () => {
-    const e = elections.find(x => x.id === select.value);
-
-    if (!e || !e.nomination_deadline) {
-        info.textContent = "";
-        return;
+    if (elSelect) {
+        elSelect.addEventListener('change', () => {
+            const e = elections.find(x => String(x.id) === String(elSelect.value));
+            if (e && e.nomination_deadline) {
+                deadlineText.textContent = 'Nominations close: ' + new Date(e.nomination_deadline).toLocaleString();
+                deadlinePill.classList.add('visible');
+            } else {
+                deadlinePill.classList.remove('visible');
+            }
+        });
     }
 
-    const d = new Date(e.nomination_deadline);
-    info.textContent = "Nominations close: " + d.toLocaleString();
-});
-</script>
+    /* ── Table filters ─────────────────────────── */
+    const searchInput    = document.getElementById('candidateSearch');
+    const electionFilter = document.getElementById('electionFilter');
+    const tableBody      = document.getElementById('candidateTableBody');
+    const visibleCount   = document.getElementById('visibleCount');
 
+    function applyFilters() {
+        if (!tableBody) return;
+        const q   = searchInput  ? searchInput.value.toLowerCase().trim() : '';
+        const eid = electionFilter ? String(electionFilter.value) : '';
+        let visible = 0;
+
+        tableBody.querySelectorAll('tr').forEach(row => {
+            const matchSearch   = !q   || row.dataset.search.includes(q);
+            const matchElection = !eid || String(row.dataset.election) === eid;
+            const show = matchSearch && matchElection;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (visibleCount) visibleCount.textContent = visible;
+    }
+
+    if (searchInput)    searchInput.addEventListener('input', applyFilters);
+    if (electionFilter) electionFilter.addEventListener('change', applyFilters);
+})();
+</script>
 {% endblock %}

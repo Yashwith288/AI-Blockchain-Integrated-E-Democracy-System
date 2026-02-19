@@ -1,57 +1,440 @@
 {% extends "base.html" %}
 {% set title = "Manage Returning Officers (RO)" %}
 
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════
+   MANAGE RO PAGE
+═══════════════════════════════════════════════════ */
+.manage-ro-page {
+    min-height: calc(100vh - var(--nav-h));
+    padding: 3rem 4rem 6rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── PAGE HEADER ─────────────────────────────── */
+.page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.page-breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+    margin-bottom: 0.75rem;
+}
+.page-breadcrumb:hover { color: var(--indigo); }
+.page-breadcrumb svg { width: 10px; height: 10px; transition: transform 0.2s; }
+.page-breadcrumb:hover svg { transform: translateX(-2px); }
+
+.page-title {
+    font-family: var(--font-disp);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 0.92;
+    color: var(--text);
+}
+.page-title span { color: var(--indigo); }
+
+.page-title-sub {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.page-title-sub::before { content: ''; width: 20px; height: 1px; background: var(--indigo); }
+
+.header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.meta-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--ink-2);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.meta-badge .num {
+    font-size: 1rem;
+    font-family: var(--font-disp);
+    color: var(--indigo);
+    line-height: 1;
+}
+
+/* ── TOOLBAR ─────────────────────────────────── */
+.table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--ink-2);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    flex-wrap: wrap;
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.toolbar-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.toolbar-label::before { content: ''; width: 12px; height: 1px; background: var(--indigo); }
+
+.search-wrap { position: relative; }
+.search-wrap svg {
+    position: absolute; left: 0.75rem; top: 50%;
+    transform: translateY(-50%);
+    width: 12px; height: 12px;
+    stroke: var(--muted); fill: none; stroke-width: 1.5;
+    pointer-events: none;
+}
+.table-search {
+    font-family: var(--font-mono); font-size: 0.72rem;
+    letter-spacing: 0.05em; color: var(--text);
+    background: #fff; border: 1px solid rgba(30,40,80,0.15);
+    padding: 0.55rem 0.9rem 0.55rem 2rem;
+    outline: none; width: 220px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.table-search:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+.table-search::placeholder { opacity: 0.45; }
+
+/* Filter tabs */
+.filter-tabs { display: flex; gap: 2px; }
+.filter-tab {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 0.4rem 0.8rem; border: 1px solid transparent;
+    background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+}
+.filter-tab:hover { color: var(--indigo); border-color: var(--border); }
+.filter-tab.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
+
+/* ── TABLE ───────────────────────────────────── */
+.table-wrap {
+    border: 1px solid var(--border);
+    overflow: hidden; overflow-x: auto;
+}
+
+.data-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--font-body); font-size: 0.88rem;
+}
+.data-table thead {
+    background: var(--ink-2); border-bottom: 1px solid var(--border);
+}
+.data-table th {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 400;
+    padding: 0.85rem 1.25rem; text-align: left;
+    white-space: nowrap; border-right: 1px solid var(--border);
+}
+.data-table th:last-child { border-right: none; }
+.data-table tbody tr {
+    border-bottom: 1px solid var(--border); transition: background 0.15s;
+}
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--indigo-dim); }
+.data-table td {
+    padding: 1rem 1.25rem; color: var(--text);
+    border-right: 1px solid var(--border); vertical-align: middle;
+}
+.data-table td:last-child { border-right: none; }
+
+.row-index {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    color: rgba(107,114,128,0.4); letter-spacing: 0.05em; width: 40px;
+}
+
+/* Email cell */
+.email-cell { display: flex; align-items: center; gap: 0.75rem; }
+.email-avatar {
+    width: 30px; height: 30px; flex-shrink: 0;
+    background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,0.2);
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    font-weight: 700; color: var(--teal); text-transform: uppercase;
+}
+.email-text { font-size: 0.85rem; color: var(--text); }
+
+/* Constituency tag */
+.constituency-tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; color: var(--text);
+    background: var(--ink-2); border: 1px solid var(--border);
+    padding: 0.25rem 0.6rem;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.12em; text-transform: uppercase; padding: 0.3rem 0.7rem;
+}
+.status-badge .badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.status-badge.active {
+    color: var(--teal); background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,0.25);
+}
+.status-badge.active .badge-dot { background: var(--teal); animation: blink 2s ease-in-out infinite; }
+.status-badge.inactive {
+    color: var(--muted); background: var(--ink-2); border: 1px solid var(--border);
+}
+.status-badge.inactive .badge-dot { background: var(--muted); }
+
+/* Date cell */
+.date-cell {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    letter-spacing: 0.04em; color: var(--muted);
+}
+
+/* ── EMPTY STATE ─────────────────────────────── */
+.empty-state {
+    border: 1px solid var(--border); padding: 5rem 2rem;
+    text-align: center; background: var(--ink-2);
+}
+.empty-icon {
+    width: 56px; height: 56px; background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,0.2);
+    display: grid; place-items: center; margin: 0 auto 1.5rem;
+}
+.empty-icon svg {
+    width: 24px; height: 24px; stroke: var(--teal);
+    fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.empty-title {
+    font-family: var(--font-disp); font-size: 1.8rem;
+    color: var(--text); margin-bottom: 0.5rem;
+}
+.empty-sub {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ── TABLE FOOTER ────────────────────────────── */
+.table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    border: 1px solid var(--border); border-top: none;
+    background: var(--ink-2); flex-wrap: wrap; gap: 0.5rem;
+}
+.table-footer-info {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.table-footer-info span { color: var(--indigo); }
+
+/* ── RESPONSIVE ──────────────────────────────── */
+@media (max-width: 900px) {
+    .manage-ro-page { padding: 2rem 1.5rem 4rem; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .table-toolbar { flex-direction: column; align-items: flex-start; }
+    .table-search { width: 100%; }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
-<div class="ec-manage">
+<div class="manage-ro-page">
 
-    <h2>Manage Returning Officers (RO)</h2>
-
-    <!-- =========================
-         Navigation
-    ========================== -->
-    <div class="action-bar">
-        <a href="{{ url_for('election_commission.dashboard') }}" class="btn-secondary">
-            ← Back to DEO Dashboard
-        </a>
+    <!-- ── PAGE HEADER ────────────────────────────── -->
+    <div class="page-header reveal">
+        <div>
+            <a href="{{ url_for('election_commission.dashboard') }}" class="page-breadcrumb">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M10 12L6 8l4-4"/>
+                </svg>
+                DEO Dashboard
+            </a>
+            <h1 class="page-title">Returning<br><span>Officers</span></h1>
+            <div class="page-title-sub">District Election Officer · Personnel Management</div>
+        </div>
+        <div class="header-meta">
+            <div class="meta-badge">
+                <span class="num">{{ ros|length if ros else 0 }}</span>
+                ROs Registered
+            </div>
+            <div class="meta-badge">
+                <span class="num">{{ ros|selectattr('is_active')|list|length if ros else 0 }}</span>
+                Active
+            </div>
+        </div>
     </div>
 
-    <!-- =========================
-         RO List
-    ========================== -->
-    <section class="table-section">
-        <h3>Registered Returning Officers</h3>
+    <!-- ── TABLE OR EMPTY ─────────────────────────── -->
+    {% if ros and ros|length > 0 %}
 
-        {% if ros and ros|length > 0 %}
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Email</th>
-                        <th>Constituency</th>
-                        <th>Status</th>
-                        <th>Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for ro in ros %}
-                        <tr>
-                            <td>{{ ro.email }}</td>
-                            <td>{{ ro.constituency_id }}</td>
-                            <td>
-                                {% if ro.is_active %}
-                                    <span class="status active">Active</span>
-                                {% else %}
-                                    <span class="status inactive">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ ro.created_at }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p>No Returning Officers found.</p>
-        {% endif %}
-    </section>
+    <div class="table-toolbar reveal">
+        <div class="toolbar-left">
+            <span class="toolbar-label">Registered ROs</span>
+            <div class="search-wrap">
+                <svg viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4"/><path d="M9.5 9.5l3 3"/></svg>
+                <input
+                    class="table-search"
+                    id="roSearch"
+                    type="text"
+                    placeholder="Search by email or constituency…"
+                    autocomplete="off"
+                >
+            </div>
+        </div>
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="inactive">Inactive</button>
+        </div>
+    </div>
+
+    <div class="table-wrap reveal">
+        <table class="data-table" id="roTable">
+            <thead>
+                <tr>
+                    <th class="row-index">#</th>
+                    <th>Email</th>
+                    <th>Constituency</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                </tr>
+            </thead>
+            <tbody id="roTableBody">
+                {% for ro in ros %}
+                <tr
+                    data-status="{{ 'active' if ro.is_active else 'inactive' }}"
+                    data-search="{{ ro.email|lower }} {{ ro.constituency_id }}"
+                >
+                    <td class="row-index">{{ loop.index }}</td>
+                    <td>
+                        <div class="email-cell">
+                            <div class="email-avatar">{{ ro.email[0] }}</div>
+                            <span class="email-text">{{ ro.email }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="constituency-tag">{{ ro.constituency_id }}</span>
+                    </td>
+                    <td>
+                        {% if ro.is_active %}
+                            <span class="status-badge active">
+                                <span class="badge-dot"></span>Active
+                            </span>
+                        {% else %}
+                            <span class="status-badge inactive">
+                                <span class="badge-dot"></span>Inactive
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="date-cell">{{ ro.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-footer">
+        <span class="table-footer-info">
+            Showing <span id="visibleCount">{{ ros|length }}</span> of <span>{{ ros|length }}</span> officers
+        </span>
+        <span class="table-footer-info">
+            District · DEO Portal
+        </span>
+    </div>
+
+    {% else %}
+
+    <div class="empty-state reveal">
+        <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="empty-title">No Officers Found</div>
+        <div class="empty-sub">No Returning Officers have been registered in your district yet</div>
+    </div>
+
+    {% endif %}
 
 </div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    const searchInput  = document.getElementById('roSearch');
+    const tableBody    = document.getElementById('roTableBody');
+    const filterTabs   = document.querySelectorAll('.filter-tab');
+    const visibleCount = document.getElementById('visibleCount');
+
+    let currentFilter = 'all';
+
+    function applyFilters() {
+        if (!tableBody) return;
+        const q = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        let visible = 0;
+
+        tableBody.querySelectorAll('tr').forEach(row => {
+            const matchSearch = !q || row.dataset.search.includes(q);
+            const matchFilter = currentFilter === 'all' || row.dataset.status === currentFilter;
+            const show        = matchSearch && matchFilter;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (visibleCount) visibleCount.textContent = visible;
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyFilters);
+
+    filterTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            filterTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.filter;
+            applyFilters();
+        });
+    });
+</script>
 {% endblock %}

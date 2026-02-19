@@ -1,237 +1,812 @@
 {% extends "base.html" %}
 {% set title = "Voter Management (ERO)" %}
 
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   VOTER MANAGEMENT (ERO) PAGE
+═══════════════════════════════════════════════════════════ */
+
+.voter-mgmt-page {
+    min-height: calc(100vh - var(--nav-h));
+    background: var(--ink-2);
+    padding: 3rem 4rem 5rem;
+}
+
+/* ── PAGE HEADER ──────────────────────────────────────────── */
+.page-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.page-header-tag {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--indigo); margin-bottom: 0.5rem;
+}
+.page-header-tag::before { content: ''; width: 20px; height: 1px; background: var(--indigo); }
+.page-title {
+    font-family: var(--font-disp);
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 0.95; color: var(--text); margin-bottom: 0.5rem;
+}
+.page-title em { font-style: normal; color: var(--indigo); }
+.page-sub { font-size: 0.85rem; color: var(--muted); line-height: 1.65; max-width: 600px; }
+
+/* ── MAIN GRID ────────────────────────────────────────────── */
+.voter-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* ── LEFT SIDEBAR ─────────────────────────────────────────── */
+.left-sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* Card */
+.action-card {
+    background: var(--ink); border: 1px solid var(--border); overflow: hidden;
+}
+.action-card-header {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border); background: var(--ink-2);
+}
+.action-card-title {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--indigo);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.action-card-title::before { content: ''; width: 12px; height: 1px; background: var(--indigo); }
+.action-card-body { padding: 1.25rem; }
+
+/* Add voter form */
+.voter-form { display: flex; flex-direction: column; gap: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+.form-label {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted);
+}
+.form-input,
+.form-select,
+.form-textarea {
+    font-family: var(--font-body); font-size: 0.82rem;
+    color: var(--text); background: var(--ink-2);
+    border: 1px solid var(--border); padding: 0.65rem 0.85rem;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    border-radius: 0; width: 100%;
+}
+.form-textarea { resize: vertical; line-height: 1.6; min-height: 70px; }
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    border-color: var(--indigo); box-shadow: 0 0 0 2px var(--indigo-dim);
+}
+.form-input::placeholder,
+.form-textarea::placeholder { color: rgba(107,114,128,0.45); }
+
+.btn-submit {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: var(--indigo); color: #fff; border: none;
+    padding: 0.75rem 1.25rem; cursor: pointer;
+    transition: background 0.2s; width: 100%;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+}
+.btn-submit:hover { background: var(--indigo-dark); }
+
+/* Roll publishing card */
+.roll-card {
+    background: var(--indigo-dark);
+    border-color: rgba(79,70,229,0.3); padding: 1.5rem;
+    position: relative; overflow: hidden;
+}
+.roll-card::before {
+    content: ''; position: absolute; bottom: -20px; right: -20px;
+    width: 100px; height: 100px; border-radius: 50%;
+    background: rgba(245,158,11,0.06);
+}
+.roll-eyebrow {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--warm-light); margin-bottom: 0.5rem;
+}
+.roll-title {
+    font-family: var(--font-disp); font-size: 1.4rem; line-height: 1;
+    color: #fff; margin-bottom: 0.75rem;
+}
+.roll-select-wrap { margin-bottom: 1rem; }
+.roll-select {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    letter-spacing: 0.04em; color: var(--text);
+    background: rgba(255,255,255,0.95); border: 1px solid rgba(255,255,255,0.2);
+    padding: 0.65rem 0.85rem; outline: none; width: 100%;
+    border-radius: 0; cursor: pointer;
+}
+.deadlines-box {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: rgba(255,255,255,0.5); line-height: 1.7;
+    margin-bottom: 1rem; letter-spacing: 0.04em;
+}
+.deadlines-box .dl-row { margin-bottom: 0.3rem; }
+.deadlines-box strong { color: var(--warm-light); font-weight: 700; }
+
+.roll-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.btn-roll {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    padding: 0.65rem 1rem; border: none; cursor: pointer;
+    transition: opacity 0.2s; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+}
+.btn-roll.draft { background: rgba(255,255,255,0.15); color: #fff; }
+.btn-roll.final { background: var(--warm-light); color: var(--indigo-dark); }
+.btn-roll:hover { opacity: 0.85; }
+.btn-roll:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Reset button */
+.btn-reset {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: #dc2626; color: #fff; border: none;
+    padding: 0.65rem 1rem; cursor: pointer;
+    transition: background 0.2s; width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+}
+.btn-reset:hover { background: #b91c1c; }
+
+/* ── MAIN TABLE AREA ──────────────────────────────────────── */
+.table-section {}
+
+/* Table card */
+.table-card {
+    background: var(--ink); border: 1px solid var(--border);
+}
+.table-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--ink-2);
+    gap: 1rem; flex-wrap: wrap;
+}
+.table-card-title {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--indigo);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.table-card-title::before { content: ''; width: 14px; height: 1px; background: var(--indigo); }
+
+.table-controls { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+/* Search */
+.table-search {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid var(--border); background: var(--ink); overflow: hidden;
+}
+.table-search svg { margin: 0 0.65rem; color: var(--muted); flex-shrink: 0; }
+.table-search input {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    letter-spacing: 0.05em; color: var(--text);
+    background: none; border: none; outline: none;
+    padding: 0.5rem 0.75rem 0.5rem 0; width: 160px;
+}
+.table-search input::placeholder { color: rgba(107,114,128,0.45); }
+
+/* Booth filter */
+.booth-filter-wrap { position: relative; }
+.booth-filter-btn {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); background: var(--ink-2);
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.9rem; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    white-space: nowrap;
+}
+.booth-filter-btn:hover { border-color: var(--indigo); background: var(--indigo-dim); }
+.booth-filter-btn svg { transition: transform 0.2s; }
+.booth-filter-btn.open svg { transform: rotate(180deg); }
+.booth-dropdown {
+    display: none;
+    position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--ink); border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(30,40,80,0.12);
+    min-width: 220px; max-height: 300px; overflow-y: auto; z-index: 60;
+}
+.booth-dropdown.visible { display: block; }
+.booth-opt {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); background: none; border: none;
+    padding: 0.65rem 1rem; width: 100%; text-align: left; cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    border-bottom: 1px solid var(--border);
+}
+.booth-opt:last-child { border-bottom: none; }
+.booth-opt:hover { color: var(--indigo); background: var(--indigo-dim); }
+.booth-opt.active { color: var(--indigo); background: var(--indigo-dim); font-weight: 700; }
+
+/* Status filter */
+.status-tabs {
+    display: flex; border: 1px solid var(--border); overflow: hidden;
+}
+.status-tab {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); padding: 0.5rem 0.9rem;
+    background: none; border: none; cursor: pointer;
+    border-right: 1px solid var(--border);
+    transition: color 0.2s, background 0.2s; white-space: nowrap;
+}
+.status-tab:last-child { border-right: none; }
+.status-tab:hover { color: var(--indigo); background: var(--indigo-dim); }
+.status-tab.active { color: #fff; background: var(--indigo); }
+
+/* Voter table */
+.voter-table { width: 100%; border-collapse: collapse; }
+.voter-table thead tr { border-bottom: 1px solid var(--border); }
+.voter-table th {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); font-weight: 400;
+    padding: 0.7rem 1.25rem; text-align: left;
+    background: var(--ink-2); white-space: nowrap;
+}
+.voter-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.voter-table tbody tr.edit-row { background: var(--ink-3); }
+.voter-table tbody tr:not(.edit-row):last-child { border-bottom: none; }
+.voter-table tbody tr:not(.edit-row):hover { background: #f8f8fd; }
+.voter-table td { padding: 0.9rem 1.25rem; vertical-align: middle; }
+
+.td-num {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: rgba(79,70,229,0.2); font-weight: 700; width: 2.5rem;
+}
+.td-name { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+.td-voter-id {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    color: var(--indigo); letter-spacing: 0.04em;
+}
+.td-booth {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    color: var(--muted); letter-spacing: 0.04em;
+}
+.status-badge {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.2rem 0.6rem; border-radius: 2px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 0.3rem;
+}
+.status-badge::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+}
+.status-badge.active {
+    color: var(--teal); background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,0.2);
+}
+.status-badge.active::before {
+    background: var(--teal); animation: blink 1.4s ease-in-out infinite;
+}
+.status-badge.inactive {
+    color: var(--muted); background: var(--ink-3);
+    border: 1px solid var(--border);
+}
+.status-badge.inactive::before { background: var(--muted); }
+
+.td-actions {
+    display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;
+}
+.btn-edit {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: var(--indigo-dim); color: var(--indigo);
+    border: 1px solid rgba(79,70,229,0.2);
+    padding: 0.4rem 0.8rem; cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-edit:hover { background: var(--indigo-mid); }
+.btn-remove {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: #dc2626; color: #fff; border: none;
+    padding: 0.4rem 0.8rem; cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-remove:hover { background: #b91c1c; }
+
+/* Edit row */
+.edit-row-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.edit-row-form input,
+.edit-row-form select {
+    font-family: var(--font-mono); font-size: 0.72rem;
+    color: var(--text); background: var(--ink);
+    border: 1px solid var(--border); padding: 0.5rem 0.65rem;
+    outline: none; flex: 1; min-width: 120px;
+}
+.edit-row-form input:focus,
+.edit-row-form select:focus { border-color: var(--indigo); }
+.btn-save {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: var(--teal); color: #fff; border: none;
+    padding: 0.5rem 1rem; cursor: pointer;
+}
+.btn-save:hover { opacity: 0.85; }
+
+/* Empty/no results */
+.table-empty {
+    padding: 4rem 2rem; text-align: center;
+}
+.table-empty-num {
+    font-family: var(--font-disp); font-size: 4rem; line-height: 1;
+    color: rgba(79,70,229,0.07); margin-bottom: 0.75rem;
+}
+.table-empty p {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+.no-results-row td {
+    padding: 2rem 1.5rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); text-align: center;
+}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 1200px) {
+    .voter-mgmt-page { padding: 2rem 2rem 4rem; }
+    .voter-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+    .voter-mgmt-page { padding: 1.5rem 1rem 3rem; }
+    .voter-table thead { display: none; }
+    .voter-table td { display: block; padding: 0.4rem 1rem; }
+    .voter-table tbody tr { display: block; padding: 0.75rem 0; }
+}
+</style>
+{% endblock %}
+
+
 {% block content %}
-<div class="ec-voter-management">
+<div class="voter-mgmt-page">
 
-    <h2>Voter Management</h2>
-
-    <div class="info-note">
-        <p>
-            The Electoral Registration Officer (ERO) is responsible for
-            adding eligible voters and removing ineligible voters
-            from the electoral roll.
+    <!-- ── Page Header ─────────────────────────────────────── -->
+    <div class="page-header">
+        <div class="page-header-tag">Electoral Registration Officer</div>
+        <h1 class="page-title">Voter <em>Management</em></h1>
+        <p class="page-sub">
+            Add eligible voters, remove ineligible voters, publish electoral rolls,
+            and manage voter registrations for your jurisdiction.
         </p>
     </div>
-    <form method="POST" action="{{ url_for('election_commission.reset_verification') }}">
-    <button class="btn-warning">
-        Mark All Voters Unverified
-    </button>
-</form>
 
-<h3>Publish Electoral Roll</h3>
+    <!-- ── Main Grid ───────────────────────────────────────── -->
+    <div class="voter-grid">
 
-<div class="form-group">
-    <label>Select Election</label>
-    <select id="rollElectionSelect" required>
-        <option value="">Select Election</option>
-        {% for e in elections %}
-            <option value="{{ e.id }}">
-                {{ e.election_name }}
-            </option>
-        {% endfor %}
-    </select>
-</div>
+        <!-- LEFT: Actions Sidebar -->
+        <div class="left-sidebar">
 
-<!-- Draft Roll Form -->
-<form method="POST"
-      id="draftRollForm"
-      action="">
-    <button class="btn-secondary">
-        Publish Draft Roll
-    </button>
-</form>
-
-<!-- Final Roll Form -->
-<form method="POST"
-      id="finalRollForm"
-      action="">
-    <button class="btn-primary">
-        Publish Final Roll
-    </button>
-</form>
-
-
-
-    <section class="form-section">
-        <h3>Add New Voter</h3>
-        <form method="POST" action="{{ url_for('election_commission.add_voter') }}">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input name="full_name" required>
-            </div>
-            <div class="form-group">
-                <label>Guardian Name</label>
-                <input name="guardian_name" required>
-            </div>
-            <div class="form-group">
-                <label>Gender</label>
-                <select name="gender" required>
-                    <option>Male</option>
-                    <option>Female</option>
-                    <option>Other</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" name="date_of_birth" required>
-            </div>
-            <div class="form-group">
-                <label>Address</label>
-                <textarea name="address" required></textarea>
-            </div>
-            <div class="form-group">
-    <label>Booth</label>
-    <select name="booth_id" required>
-        <option value="">Select Booth</option>
-        {% for b in booths %}
-            <option value="{{ b.id }}">
-                {{ b.booth_name or b.id }}
-            </option>
-        {% endfor %}
-    </select>
-</div>
-
-            <div class="form-group">
-    <label>Email</label>
-    <input type="email" name="email" required>
-</div>
-
-            <button class="btn-primary">Add Voter</button>
-        </form>
-    </section>
-
-    <section class="table-section">
-        <h3>Registered Voters</h3>
-        {% if voters and voters|length > 0 %}
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Voter ID</th>
-                        <th>Booth</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-    {% for voter in voters %}
-
-        <!-- Normal row -->
-        <tr>
-            <td>{{ voter.full_name }}</td>
-            <td>{{ voter.voter_id_number }}</td>
-            <td>{{ voter.booth_id }}</td>
-            <td>
-                {{ "Active" if voter.is_active else "Inactive" }}
-            </td>
-            <td>
-
-    <!-- Edit always allowed -->
-    <button type="button"
-            class="btn-secondary"
-            onclick="toggleEdit('{{ voter.id }}')">
-        Edit
-    </button>
-
-    {% if voter.is_active %}
-        <!-- Remove only if active -->
-        <form method="POST"
-              action="{{ url_for('election_commission.remove_voter', voter_id=voter.id) }}"
-              style="display:inline;">
-            <button class="btn-danger">Remove</button>
-        </form>
-    {% else %}
-        <span class="text-muted">Inactive</span>
-    {% endif %}
-
-</td>
-
-
-        </tr>
-
-        <!-- Hidden edit row -->
-        <tr id="edit-row-{{ voter.id }}" style="display:none;background:#f9fafb;">
-    <td colspan="5">
-
-        <form method="POST"
-              action="{{ url_for('election_commission.update_voter', voter_id=voter.id) }}">
-
-            <div style="display:flex;gap:10px;flex-wrap:wrap">
-
-                <input name="full_name"
-                       value="{{ voter.full_name }}"
-                       placeholder="Full Name"
-                       required>
-
-                <input name="address"
-                       value="{{ voter.address }}"
-                       placeholder="Address"
-                       required>
-
-                <select name="booth_id" required>
-    {% for b in booths %}
-        <option value="{{ b.id }}"
-            {{ "selected" if b.id == voter.booth_id else "" }}>
-            {{ b.booth_name or b.id }}
-        </option>
-    {% endfor %}
-</select>
-
-
-                <!-- Status dropdown -->
-                <select name="is_active">
-                    <option value="true" {{ "selected" if voter.is_active else "" }}>
-                        Active
-                    </option>
-                    <option value="false" {{ "selected" if not voter.is_active else "" }}>
-                        Inactive
-                    </option>
-                </select>
-
-                <button class="btn-primary">Save</button>
-
+            <!-- Add Voter Card -->
+            <div class="action-card">
+                <div class="action-card-header">
+                    <span class="action-card-title">Add New Voter</span>
+                </div>
+                <div class="action-card-body">
+                    <form method="POST" action="{{ url_for('election_commission.add_voter') }}" class="voter-form">
+                        <div class="form-group">
+                            <label class="form-label" for="full_name">Full Name *</label>
+                            <input type="text" id="full_name" name="full_name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="guardian_name">Guardian Name *</label>
+                            <input type="text" id="guardian_name" name="guardian_name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="gender">Gender *</label>
+                            <select id="gender" name="gender" class="form-select" required>
+                                <option value="">Select…</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="date_of_birth">Date of Birth *</label>
+                            <input type="date" id="date_of_birth" name="date_of_birth" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="address">Address *</label>
+                            <textarea id="address" name="address" class="form-textarea" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="booth_id">Polling Booth *</label>
+                            <select id="booth_id" name="booth_id" class="form-select" required>
+                                <option value="">Select booth…</option>
+                                {% for b in booths %}
+                                    <option value="{{ b.id }}">{{ b.booth_name or b.id }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="email">Email *</label>
+                            <input type="email" id="email" name="email" class="form-input" required>
+                        </div>
+                        <button type="submit" class="btn-submit">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add Voter
+                        </button>
+                    </form>
+                </div>
             </div>
 
-        </form>
+            <!-- Electoral Roll Publishing -->
+            <div class="action-card roll-card">
+                <div class="roll-eyebrow">Electoral Roll</div>
+                <div class="roll-title">Publish Roll</div>
 
-    </td>
-</tr>
+                <div class="roll-select-wrap">
+                    <select id="rollElectionSelect" class="roll-select">
+                        <option value="">Select Election…</option>
+                        {% for e in elections %}
+                            <option value="{{ e.id }}">{{ e.election_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
+                <div id="rollDeadlines" class="deadlines-box" style="display:none;">
+                    <div class="dl-row">
+                        <strong>Draft:</strong> 
+                        <span id="draftDeadline"></span>
+                        <span id="draftCountdown" style="display:block;color:var(--warm-light);font-size:0.7rem;margin-top:0.2rem;"></span>
+                    </div>
+                    <div class="dl-row">
+                        <strong>Final:</strong> 
+                        <span id="finalDeadline"></span>
+                        <span id="finalCountdown" style="display:block;color:var(--warm-light);font-size:0.7rem;margin-top:0.2rem;"></span>
+                    </div>
+                </div>
 
-    {% endfor %}
-</tbody>
+                <div class="roll-actions">
+                    <form method="POST" id="draftRollForm" action="">
+                        <button type="submit" class="btn-roll draft" disabled id="draftBtn">
+                            Publish Draft Roll
+                        </button>
+                    </form>
+                    <form method="POST" id="finalRollForm" action="">
+                        <button type="submit" class="btn-roll final" disabled id="finalBtn">
+                            Publish Final Roll
+                        </button>
+                    </form>
+                </div>
+            </div>
 
-            </table>
-        {% else %}
-            <p>No voters found.</p>
-        {% endif %}
-    </section>
+            <!-- Reset Verification -->
+            <div class="action-card">
+                <div class="action-card-header">
+                    <span class="action-card-title">Reset Verification</span>
+                </div>
+                <div class="action-card-body">
+                    <form method="POST" action="{{ url_for('election_commission.reset_verification') }}">
+                        <button type="submit" class="btn-reset" onclick="return confirm('Mark all voters as unverified? This cannot be undone.')">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+                            Mark All Unverified
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT: Voter Table -->
+        <div class="table-section">
+            <div class="table-card">
+                <div class="table-card-header">
+                    <span class="table-card-title">Registered Voters</span>
+
+                    <div class="table-controls">
+                        <!-- Search -->
+                        <div class="table-search">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input
+                                type="text"
+                                id="voterSearch"
+                                placeholder="Search voters…"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <!-- Booth filter -->
+                        <div class="booth-filter-wrap">
+                            <button class="booth-filter-btn" id="boothFilterBtn">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                                </svg>
+                                <span id="boothFilterLabel">All Booths</span>
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"/>
+                                </svg>
+                            </button>
+                            <div class="booth-dropdown" id="boothDropdown">
+                                <button class="booth-opt active" data-booth="">All Booths</button>
+                                {% for b in booths %}
+                                    <button class="booth-opt" data-booth="{{ b.id }}">{{ b.booth_name or b.id }}</button>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Status filter -->
+                        <div class="status-tabs">
+                            <button class="status-tab active" data-status="">All</button>
+                            <button class="status-tab" data-status="active">Active</button>
+                            <button class="status-tab" data-status="inactive">Inactive</button>
+                        </div>
+                    </div>
+                </div>
+
+                {% if voters and voters|length > 0 %}
+                    <table class="voter-table" id="voterTable">
+                        <thead>
+                            <tr>
+                                <th style="width:3rem;">#</th>
+                                <th>Name</th>
+                                <th>Voter ID</th>
+                                <th>Booth</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="voterTableBody">
+                            {% for voter in voters %}
+                                <tr
+                                    data-name="{{ voter.full_name|lower }}"
+                                    data-voter-id="{{ voter.voter_id_number|lower }}"
+                                    data-booth="{{ voter.booth_id }}"
+                                    data-status="{{ 'active' if voter.is_active else 'inactive' }}"
+                                >
+                                    <td class="td-num">{{ '%03d' % loop.index }}</td>
+                                    <td class="td-name">{{ voter.full_name }}</td>
+                                    <td class="td-voter-id">{{ voter.voter_id_number }}</td>
+                                    <td class="td-booth">{{ voter.booth_id }}</td>
+                                    <td>
+                                        {% if voter.is_active %}
+                                            <span class="status-badge active">Active</span>
+                                        {% else %}
+                                            <span class="status-badge inactive">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="td-actions">
+                                        <button type="button" class="btn-edit" onclick="toggleEdit('{{ voter.id }}')">
+                                            Edit
+                                        </button>
+                                        {% if voter.is_active %}
+                                            <form method="POST" action="{{ url_for('election_commission.remove_voter', voter_id=voter.id) }}" style="display:inline;">
+                                                <button type="submit" class="btn-remove" onclick="return confirm('Remove this voter?')">
+                                                    Remove
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+
+                                <!-- Edit row -->
+                                <tr id="edit-row-{{ voter.id }}" class="edit-row" style="display:none;">
+                                    <td colspan="6">
+                                        <form method="POST" action="{{ url_for('election_commission.update_voter', voter_id=voter.id) }}" class="edit-row-form">
+                                            <input name="full_name" value="{{ voter.full_name }}" placeholder="Name" required>
+                                            <input name="address" value="{{ voter.address }}" placeholder="Address" required>
+                                            <select name="booth_id" required>
+                                                {% for b in booths %}
+                                                    <option value="{{ b.id }}" {{ "selected" if b.id == voter.booth_id else "" }}>
+                                                        {{ b.booth_name or b.id }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            <select name="is_active">
+                                                <option value="true" {{ "selected" if voter.is_active else "" }}>Active</option>
+                                                <option value="false" {{ "selected" if not voter.is_active else "" }}>Inactive</option>
+                                            </select>
+                                            <button type="submit" class="btn-save">Save</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+
+                            <!-- No results row -->
+                            <tr id="noResults" style="display:none;" class="no-results-row">
+                                <td colspan="6">No voters match your search or filters.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                {% else %}
+                    <div class="table-empty">
+                        <div class="table-empty-num">0</div>
+                        <p>No voters registered yet. Add voters using the form.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
 <script>
-const select = document.getElementById("rollElectionSelect");
-const draftForm = document.getElementById("draftRollForm");
-const finalForm = document.getElementById("finalRollForm");
+    // ── Roll publishing ────────────────────────────────────────
+    const elections = {{ elections|tojson }};
+    const rollSelect = document.getElementById("rollElectionSelect");
+    const draftForm  = document.getElementById("draftRollForm");
+    const finalForm  = document.getElementById("finalRollForm");
+    const draftBtn   = document.getElementById("draftBtn");
+    const finalBtn   = document.getElementById("finalBtn");
+    const deadlinesBox = document.getElementById("rollDeadlines");
+    const draftDeadline = document.getElementById("draftDeadline");
+    const finalDeadline = document.getElementById("finalDeadline");
+    const draftCountdown = document.getElementById("draftCountdown");
+    const finalCountdown = document.getElementById("finalCountdown");
 
-select.addEventListener("change", () => {
-    const id = select.value;
+    let countdownInterval = null;
+    let selectedElection = null;
 
-    if (!id) {
-        draftForm.action = "";
-        finalForm.action = "";
-        return;
+    // Format countdown
+    function formatCountdown(targetDate) {
+        const now = new Date();
+        const target = new Date(targetDate);
+        const diff = target - now;
+
+        if (diff <= 0) return '⏰ Deadline passed';
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (days > 0) return `⏱ ${days}d ${hours}h ${mins}m remaining`;
+        if (hours > 0) return `⏱ ${hours}h ${mins}m ${secs}s remaining`;
+        return `⏱ ${mins}m ${secs}s remaining`;
     }
 
-    draftForm.action = `/commission/ero/roll/${id}/publish-draft`;
-    finalForm.action = `/commission/ero/roll/${id}/publish-final`;
-});
-function toggleEdit(id) {
-    const row = document.getElementById(`edit-row-${id}`);
-    row.style.display = row.style.display === "none" ? "table-row" : "none";
-}
+    // Update countdowns
+    function updateCountdowns() {
+        if (!selectedElection) return;
 
+        if (selectedElection.draft_roll_publish_at) {
+            draftCountdown.textContent = formatCountdown(selectedElection.draft_roll_publish_at);
+        } else {
+            draftCountdown.textContent = '';
+        }
+
+        if (selectedElection.final_roll_publish_at) {
+            finalCountdown.textContent = formatCountdown(selectedElection.final_roll_publish_at);
+        } else {
+            finalCountdown.textContent = '';
+        }
+    }
+
+    rollSelect.addEventListener("change", () => {
+        const id = rollSelect.value;
+
+        // Clear previous interval
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+        }
+
+        if (!id) {
+            draftForm.action = "";
+            finalForm.action = "";
+            draftBtn.disabled = true;
+            finalBtn.disabled = true;
+            deadlinesBox.style.display = "none";
+            selectedElection = null;
+            return;
+        }
+
+        draftForm.action = `/commission/ero/roll/${id}/publish-draft`;
+        finalForm.action = `/commission/ero/roll/${id}/publish-final`;
+        draftBtn.disabled = false;
+        finalBtn.disabled = false;
+
+        selectedElection = elections.find(x => x.id === id);
+        if (selectedElection) {
+            draftDeadline.textContent = selectedElection.draft_roll_publish_at || "Not set";
+            finalDeadline.textContent = selectedElection.final_roll_publish_at || "Not set";
+            deadlinesBox.style.display = "block";
+
+            // Start countdown
+            updateCountdowns();
+            countdownInterval = setInterval(updateCountdowns, 1000);
+        }
+    });
+
+    // ── Voter table filters ────────────────────────────────────
+    let searchQuery = '';
+    let filterBooth = '';
+    let filterStatus = '';
+
+    function applyFilters() {
+        const rows = document.querySelectorAll('#voterTableBody tr:not(#noResults):not(.edit-row)');
+        const noResults = document.getElementById('noResults');
+        let visible = 0;
+
+        rows.forEach(row => {
+            const name    = row.dataset.name || '';
+            const voterId = row.dataset.voterId || '';
+            const booth   = row.dataset.booth || '';
+            const status  = row.dataset.status || '';
+
+            const matchSearch = !searchQuery || name.includes(searchQuery) || voterId.includes(searchQuery);
+            const matchBooth  = !filterBooth || booth === filterBooth;
+            const matchStatus = !filterStatus || status === filterStatus;
+
+            const show = matchSearch && matchBooth && matchStatus;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        if (noResults) noResults.style.display = visible === 0 ? '' : 'none';
+    }
+
+    // Search
+    document.getElementById('voterSearch')?.addEventListener('input', e => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        applyFilters();
+    });
+
+    // Booth dropdown
+    const boothBtn = document.getElementById('boothFilterBtn');
+    const boothDropdown = document.getElementById('boothDropdown');
+    const boothLabel = document.getElementById('boothFilterLabel');
+
+    boothBtn?.addEventListener('click', () => {
+        boothDropdown.classList.toggle('visible');
+        boothBtn.classList.toggle('open');
+    });
+
+    document.querySelectorAll('.booth-opt').forEach(opt => {
+        opt.addEventListener('click', () => {
+            filterBooth = opt.dataset.booth;
+            boothLabel.textContent = opt.textContent.trim();
+
+            document.querySelectorAll('.booth-opt').forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+
+            boothDropdown.classList.remove('visible');
+            boothBtn.classList.remove('open');
+            applyFilters();
+        });
+    });
+
+    document.addEventListener('click', e => {
+        if (!e.target.closest('.booth-filter-wrap')) {
+            boothDropdown?.classList.remove('visible');
+            boothBtn?.classList.remove('open');
+        }
+    });
+
+    // Status tabs
+    document.querySelectorAll('.status-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            filterStatus = tab.dataset.status;
+            document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            applyFilters();
+        });
+    });
+
+    // Toggle edit row
+    function toggleEdit(id) {
+        const row = document.getElementById(`edit-row-${id}`);
+        if (row) row.style.display = row.style.display === "none" ? "table-row" : "none";
+    }
 </script>
 {% endblock %}

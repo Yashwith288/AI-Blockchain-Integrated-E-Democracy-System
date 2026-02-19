@@ -18,7 +18,7 @@ from datetime import datetime
 from models.election import add_constituency_to_election,is_roll_locked
 from models.constituency import get_constituencies_by_state
 from services.election_finalizer import finalize_election_if_needed
-from models.election import get_state_name_by_state_id,get_election_by_id
+from models.election import get_state_name_by_state_id,get_election_by_id, get_elections_by_constituency
 from models.booth import get_booths_by_constituency
 
 
@@ -50,7 +50,8 @@ def dashboard():
 
     if role == "RO":
         candidates = get_candidates_by_constituency(session.get("constituency_id"))
-        return render_template("election_commission/ro/nomination_management.html", candidates=candidates)
+        elections = get_elections_by_constituency(session.get("constituency_id"))
+        return render_template("election_commission/ro/nomination_management.html", candidates=candidates,elections=elections)
 
     if role == "ERO":
         voters = get_voters_by_constituency(session.get("constituency_id"))

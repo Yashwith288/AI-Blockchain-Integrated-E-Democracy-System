@@ -250,3 +250,32 @@ def is_roll_locked(election):
     return final_dt <= now <= end_dt
 
 
+def get_elections_by_constituency(constituency_id: str):
+    """
+    Returns all elections mapped to a constituency
+    """
+
+    # Step 1: fetch mapping rows
+    mappings = fetch_all(
+        ELECTION_CONSTITUENCIES_TABLE,
+        {"constituency_id": constituency_id}
+    )
+
+    if not mappings:
+        return []
+
+    # Step 2: extract election IDs
+    election_ids = [m["election_id"] for m in mappings]
+
+    # Step 3: fetch elections one by one
+    elections = []
+    for eid in election_ids:
+        e = fetch_one(ELECTIONS_TABLE, {"id": eid})
+        if e:
+            # format times same as your state function
+            e["start_time"] = format_datetime(e["start_time"])
+            e["end_time"] = format_datetime(e["end_time"])
+            elections.append(e)
+
+    return elections
+
