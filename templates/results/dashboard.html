@@ -1,54 +1,461 @@
 {% extends "base.html" %}
 {% set title = "Live Results" %}
 
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   LIVE ELECTION RESULTS
+═══════════════════════════════════════════════════════════ */
+
+/* ── PAGE HEADER ─────────────────────────────────────────── */
+.results-header {
+    padding: 3.5rem 4rem 0;
+    background: var(--ink-2);
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+}
+.results-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(79,70,229,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 80% 80% at 0% 0%, black 20%, transparent 70%);
+    pointer-events: none;
+}
+.results-header-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: flex-end;
+    justify-content: space-between; gap: 2rem; flex-wrap: wrap;
+    padding-bottom: 2rem;
+}
+.results-header-left .section-tag { margin-bottom: 0.75rem; }
+.results-header-left h1 {
+    font-family: var(--font-disp);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 0.93; color: var(--text); margin-bottom: 0;
+}
+.results-header-left h1 span { color: var(--indigo); }
+.results-election-tag {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--teal); background: var(--teal-dim);
+    border: 1px solid rgba(13,148,136,0.2); padding: 0.35rem 0.85rem;
+    align-self: flex-start; margin-top: 0.75rem;
+}
+.results-election-tag::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--teal);
+    animation: blink 1.4s ease-in-out infinite;
+}
+
+/* constituency selector strip */
+.results-selector-strip {
+    display: flex; align-items: center; gap: 0;
+    border-top: 1px solid var(--border);
+    background: #fff;
+}
+.selector-label {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+    padding: 0 1.25rem; border-right: 1px solid var(--border);
+    white-space: nowrap; height: 100%;
+    display: flex; align-items: center;
+    background: var(--ink-2);
+}
+.selector-wrap {
+    flex: 1; position: relative;
+}
+.selector-wrap select {
+    width: 100%; padding: 0.85rem 2.5rem 0.85rem 1rem;
+    font-family: var(--font-mono); font-size: 0.75rem;
+    letter-spacing: 0.04em; color: var(--text);
+    border: none; outline: none; background: #fff;
+    appearance: none; cursor: pointer;
+    transition: background 0.15s;
+}
+.selector-wrap select:focus { background: var(--ink-2); }
+.selector-wrap::after {
+    content: '▾'; position: absolute;
+    right: 1rem; top: 50%; transform: translateY(-50%);
+    font-size: 0.75rem; color: var(--muted); pointer-events: none;
+}
+.selector-status {
+    padding: 0 1.25rem;
+    border-left: 1px solid var(--border);
+    height: 100%; display: flex; align-items: center;
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+    background: var(--ink-2);
+}
+.selector-status.live { color: var(--teal); }
+
+/* ── BODY ────────────────────────────────────────────────── */
+.results-body {
+    padding: 2rem 4rem 5rem;
+}
+
+/* ── EMPTY / PROMPT STATE ────────────────────────────────── */
+.results-prompt {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 1rem;
+    padding: 5rem 2rem;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+.results-prompt-icon {
+    width: 56px; height: 56px;
+    background: var(--ink-2); border: 1px solid var(--border);
+    display: grid; place-items: center; font-size: 1.4rem;
+}
+.results-prompt-title {
+    font-family: var(--font-disp); font-size: 1.5rem; color: var(--text); line-height: 1;
+}
+.results-prompt-sub {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ── RESULTS PANEL ───────────────────────────────────────── */
+.results-panel {
+    display: none; /* shown by JS */
+    flex-direction: column; gap: 1.25rem;
+}
+.results-panel.active { display: flex; }
+
+/* summary row */
+.results-summary {
+    display: flex; gap: 0;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+.results-summary-item {
+    flex: 1; padding: 1rem 1.5rem;
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 0.2rem;
+}
+.results-summary-item:last-child { border-right: none; }
+.rs-label {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.rs-val {
+    font-family: var(--font-disp); font-size: 1.8rem; line-height: 1; color: var(--text);
+}
+.rs-val.highlight { color: var(--indigo); }
+
+/* ── BAR CHART ───────────────────────────────────────────── */
+.results-chart {
+    border: 1px solid var(--border); background: #fff;
+    overflow: hidden;
+}
+.results-chart-head {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);
+    background: var(--ink-2);
+}
+.results-chart-title {
+    font-family: var(--font-disp); font-size: 1.2rem; color: var(--text); line-height: 1;
+}
+.results-chart-body {
+    padding: 1.25rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.9rem;
+}
+
+/* candidate bar row */
+.cand-row {
+    display: flex; flex-direction: column; gap: 0.3rem;
+}
+.cand-row-top {
+    display: flex; align-items: center; justify-content: space-between;
+}
+.cand-row-left {
+    display: flex; align-items: center; gap: 0.75rem;
+}
+.cand-rank {
+    font-family: var(--font-mono); font-size: 0.58rem; font-weight: 700;
+    width: 20px; height: 20px; display: grid; place-items: center;
+    background: var(--ink-2); border: 1px solid var(--border);
+    color: var(--muted); flex-shrink: 0;
+}
+.cand-row.winner .cand-rank {
+    background: var(--indigo); color: #fff; border-color: var(--indigo);
+}
+.cand-name {
+    font-family: var(--font-disp); font-size: 1.1rem; color: var(--text); line-height: 1;
+}
+.cand-party {
+    font-family: var(--font-mono); font-size: 0.56rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+}
+.cand-row-right {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-shrink: 0;
+}
+.cand-votes {
+    font-family: var(--font-disp); font-size: 1.4rem; line-height: 1; color: var(--text);
+}
+.cand-pct {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.06em; color: var(--muted);
+    min-width: 3.5rem; text-align: right;
+}
+
+/* bar */
+.cand-bar-track {
+    height: 8px; background: var(--border); position: relative; overflow: hidden;
+}
+.cand-bar-fill {
+    height: 100%; background: var(--indigo);
+    transition: width 0.9s cubic-bezier(0.16,1,0.3,1);
+    position: relative;
+}
+.cand-bar-fill::after {
+    content: '';
+    position: absolute; top: 0; right: 0; bottom: 0; width: 3px;
+    background: rgba(255,255,255,0.5);
+}
+.cand-row.winner .cand-bar-fill { background: var(--indigo); }
+.cand-row:not(.winner) .cand-bar-fill { background: var(--border); filter: brightness(0.85); }
+
+/* winner crown */
+.winner-badge {
+    font-family: var(--font-mono); font-size: 0.55rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--indigo); background: var(--indigo-dim);
+    border: 1px solid rgba(79,70,229,0.2);
+    padding: 0.15rem 0.5rem;
+}
+
+/* divider between candidates */
+.cand-divider { height: 1px; background: var(--border); }
+
+/* loading state */
+.results-loading {
+    display: none; /* toggled by JS */
+    padding: 3rem; text-align: center;
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+.results-loading::before {
+    content: '';
+    display: block; width: 20px; height: 20px;
+    border: 2px solid var(--border); border-top-color: var(--indigo);
+    border-radius: 50%; margin: 0 auto 0.75rem;
+    animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .results-header { padding: 2.5rem 2rem 0; }
+    .results-body   { padding: 1.5rem 2rem 3rem; }
+    .results-summary { flex-wrap: wrap; }
+    .results-summary-item { min-width: 50%; border-bottom: 1px solid var(--border); }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <h2>Live Election Results</h2>
 
-    <p><strong>Election:</strong> {{ election.election_name }}</p>
+<!-- ── HEADER ────────────────────────────────────────────── -->
+<div class="results-header">
+    <div class="results-header-inner">
+        <div class="results-header-left">
+            <div class="section-tag">Election Commission · Results</div>
+            <h1>Live <span>Results</span></h1>
+            <div class="results-election-tag">{{ election.election_name }}</div>
+        </div>
+    </div>
 
-    <label>Select Constituency</label>
-    <select id="constituency-select">
-        <option value="">-- Select --</option>
-        {% for c in constituencies %}
-            <option value="{{ c.constituency_id }}">
-                {{ c.constituency_name }}
-            </option>
-        {% endfor %}
-    </select>
+    <!-- constituency selector -->
+    <div class="results-selector-strip">
+        <span class="selector-label">Constituency</span>
+        <div class="selector-wrap">
+            <select id="constituency-select">
+                <option value="">— Select a Constituency —</option>
+                {% for c in constituencies %}
+                <option value="{{ c.constituency_id }}">{{ c.constituency_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <span class="selector-status" id="selector-status">Waiting</span>
+    </div>
+</div>
 
-    <table class="mt-3" id="results-table">
-        <thead>
-            <tr>
-                <th>Candidate</th>
-                <th>Party</th>
-                <th>Votes</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<!-- ── BODY ──────────────────────────────────────────────── -->
+<div class="results-body">
+
+    <!-- Prompt -->
+    <div class="results-prompt" id="results-prompt">
+        <div class="results-prompt-icon">🗳</div>
+        <div class="results-prompt-title">Select a Constituency</div>
+        <div class="results-prompt-sub">Choose a constituency above to view live results</div>
+    </div>
+
+    <!-- Loading -->
+    <div class="results-loading" id="results-loading">Loading results…</div>
+
+    <!-- Results panel -->
+    <div class="results-panel" id="results-panel">
+
+        <!-- Summary strip -->
+        <div class="results-summary" id="results-summary">
+            <div class="results-summary-item">
+                <span class="rs-label">Constituency</span>
+                <span class="rs-val" id="sum-constituency" style="font-size:1.2rem;">—</span>
+            </div>
+            <div class="results-summary-item">
+                <span class="rs-label">Total Votes</span>
+                <span class="rs-val highlight" id="sum-total">0</span>
+            </div>
+            <div class="results-summary-item">
+                <span class="rs-label">Candidates</span>
+                <span class="rs-val" id="sum-candidates">0</span>
+            </div>
+            <div class="results-summary-item">
+                <span class="rs-label">Leading</span>
+                <span class="rs-val" id="sum-leading" style="font-size:1rem;">—</span>
+            </div>
+        </div>
+
+        <!-- Bar chart -->
+        <div class="results-chart reveal">
+            <div class="results-chart-head">
+                <span class="results-chart-title">Vote Distribution</span>
+            </div>
+            <div class="results-chart-body" id="chart-body">
+                <!-- populated by JS -->
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <script>
-document.getElementById("constituency-select").addEventListener("change", async e => {
-    const cid = e.target.value;
-    if (!cid) return;
+(function () {
+    const select     = document.getElementById('constituency-select');
+    const prompt     = document.getElementById('results-prompt');
+    const loading    = document.getElementById('results-loading');
+    const panel      = document.getElementById('results-panel');
+    const chartBody  = document.getElementById('chart-body');
+    const statusEl   = document.getElementById('selector-status');
 
-    const res = await fetch(`/results/api/constituency?constituency_id=${cid}`);
-    const data = await res.json();
+    // Summary fields
+    const sumConst   = document.getElementById('sum-constituency');
+    const sumTotal   = document.getElementById('sum-total');
+    const sumCands   = document.getElementById('sum-candidates');
+    const sumLeading = document.getElementById('sum-leading');
 
-    const tbody = document.querySelector("#results-table tbody");
-    tbody.innerHTML = "";
+    // Colour palette cycling for non-winner candidates
+    const barColors = [
+        'var(--teal)', 'var(--warm)', '#9333ea', '#0ea5e9', '#16a34a'
+    ];
 
-    data.results.forEach(r => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${r.candidate_name}</td>
-                <td>${r.party_name}</td>
-                <td>${r.votes}</td>
-            </tr>
-        `;
+    function showState(state) {
+        prompt.style.display  = state === 'prompt'  ? 'flex'  : 'none';
+        loading.style.display = state === 'loading' ? 'block' : 'none';
+        panel.classList.toggle('active', state === 'results');
+    }
+
+    async function loadResults(cid, constName) {
+        showState('loading');
+        statusEl.textContent = 'Loading…';
+        statusEl.className   = 'selector-status';
+
+        try {
+            const res  = await fetch(`/results/api/constituency?constituency_id=${cid}`);
+            const data = await res.json();
+            renderResults(data.results || [], constName);
+            statusEl.textContent = 'Live';
+            statusEl.className   = 'selector-status live';
+        } catch (err) {
+            showState('prompt');
+            statusEl.textContent = 'Error';
+            statusEl.className   = 'selector-status';
+        }
+    }
+
+    function renderResults(results, constName) {
+        if (!results.length) {
+            showState('prompt');
+            return;
+        }
+
+        // Sort descending by votes
+        results.sort((a, b) => b.votes - a.votes);
+
+        const total   = results.reduce((s, r) => s + r.votes, 0);
+        const maxVotes = results[0].votes;
+        const winner  = results[0];
+
+        // Update summary
+        sumConst.textContent   = constName;
+        sumTotal.textContent   = total.toLocaleString();
+        sumCands.textContent   = results.length;
+        sumLeading.textContent = winner.candidate_name;
+
+        // Build chart rows
+        chartBody.innerHTML = '';
+        results.forEach((r, idx) => {
+            const isWinner = idx === 0;
+            const pct = total > 0 ? ((r.votes / total) * 100).toFixed(1) : 0;
+            const barW = total > 0 ? ((r.votes / maxVotes) * 100).toFixed(1) : 0;
+            const color = isWinner ? 'var(--indigo)' : (barColors[(idx - 1) % barColors.length]);
+
+            const row = document.createElement('div');
+            row.className = 'cand-row' + (isWinner ? ' winner' : '');
+            row.innerHTML = `
+                <div class="cand-row-top">
+                    <div class="cand-row-left">
+                        <span class="cand-rank">${idx + 1}</span>
+                        <div>
+                            <div class="cand-name">${r.candidate_name}</div>
+                            <div class="cand-party">${r.party_name}</div>
+                        </div>
+                        ${isWinner ? '<span class="winner-badge">Leading</span>' : ''}
+                    </div>
+                    <div class="cand-row-right">
+                        <span class="cand-votes">${r.votes.toLocaleString()}</span>
+                        <span class="cand-pct">${pct}%</span>
+                    </div>
+                </div>
+                <div class="cand-bar-track">
+                    <div class="cand-bar-fill" style="width:0%; background:${color};"
+                         data-target="${barW}%"></div>
+                </div>
+            `;
+
+            chartBody.appendChild(row);
+            if (idx < results.length - 1) {
+                const div = document.createElement('div');
+                div.className = 'cand-divider';
+                chartBody.appendChild(div);
+            }
+        });
+
+        showState('results');
+
+        // Animate bars after paint
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            document.querySelectorAll('.cand-bar-fill').forEach(el => {
+                el.style.width = el.dataset.target;
+            });
+        }));
+    }
+
+    select.addEventListener('change', e => {
+        const cid  = e.target.value;
+        const name = e.target.options[e.target.selectedIndex].text;
+        if (!cid) { showState('prompt'); statusEl.textContent = 'Waiting'; statusEl.className = 'selector-status'; return; }
+        loadResults(cid, name);
     });
-});
+
+    showState('prompt');
+})();
 </script>
+
 {% endblock %}

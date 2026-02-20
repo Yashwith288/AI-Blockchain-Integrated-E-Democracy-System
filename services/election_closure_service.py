@@ -5,6 +5,7 @@ from models.election import get_constituencies_for_election
 from utils.helpers import parse_iso_date
 import random
 from services.merkle_service import finalize_merkle_tree_for_election
+from services.representative_termination_service import completed_constituency_terms
 
 
 def close_election_and_assign_reps(election):
@@ -15,10 +16,11 @@ def close_election_and_assign_reps(election):
 
     election_id = election["id"]
     constituencies = get_constituencies_for_election(election_id)
+    print(constituencies)
 
     # Term dates
-    election_end = parse_iso_date(election["end_time"])
-    term_start = parse_iso_date(election["end_time"]) + timedelta(days=1)
+    election_end = parse_iso_date(election["_end_time"])
+    term_start = parse_iso_date(election["_end_time"]) + timedelta(days=1)
     term_end = term_start.replace(year=term_start.year + 5)
 
 

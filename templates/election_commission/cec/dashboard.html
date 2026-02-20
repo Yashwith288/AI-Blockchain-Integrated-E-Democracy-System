@@ -371,7 +371,7 @@
             <div class="stat-label">Approved</div>
         </div>
         <div class="stat-cell active">
-            <div class="stat-val">{{ elections|selectattr('status','equalto','Active')|list|length if elections else 0 }}</div>
+            <div class="stat-val">{{ elections|selectattr('status','equalto','ACTIVE')|list|length if elections else 0 }}</div>
             <div class="stat-label">Active</div>
         </div>
         <div class="stat-cell pending">
@@ -444,7 +444,7 @@
 
                                 <!-- Action -->
                                 <td>
-                                    {% if election.status != "Approved" and election.status != "Active" and election.status != "COMPLETED" %}
+                                    {% if election.status != "Approved" and election.status != "ACTIVE" and election.status != "COMPLETED" %}
                                         <a
                                             href="{{ url_for('election_commission.approve_election', election_id=election.id) }}"
                                             class="btn-approve"

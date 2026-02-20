@@ -1,24 +1,145 @@
 {% extends "base.html" %}
 {% set title = "Live Results" %}
 
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   LIVE RESULTS — NO ACTIVE ELECTION
+═══════════════════════════════════════════════════════════ */
+
+.no-election-page {
+    min-height: calc(100vh - var(--nav-h));
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 3rem 2rem 5rem;
+    background: var(--ink-2);
+    position: relative; overflow: hidden;
+}
+.no-election-page::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(79,70,229,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 75%);
+    pointer-events: none;
+}
+
+/* ── CARD ────────────────────────────────────────────────── */
+.no-election-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 520px;
+    background: #fff; border: 1px solid var(--border);
+    overflow: hidden;
+}
+.no-election-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--warm);
+}
+
+/* ── CARD HEADER ─────────────────────────────────────────── */
+.no-election-head {
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--ink-2);
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    text-align: center;
+}
+.no-election-icon {
+    width: 56px; height: 56px;
+    background: var(--warm-dim);
+    border: 1px solid rgba(245,158,11,0.25);
+    display: grid; place-items: center;
+    font-size: 1.4rem;
+}
+.no-election-title {
+    font-family: var(--font-disp); font-size: 1.8rem;
+    line-height: 1; color: var(--text);
+}
+.no-election-sub {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ── CARD BODY ───────────────────────────────────────────── */
+.no-election-body {
+    padding: 1.5rem 2rem 2rem;
+    display: flex; flex-direction: column; gap: 1.25rem;
+}
+.no-election-notice {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    background: var(--warm-dim);
+    border-left: 3px solid var(--warm);
+    padding: 1rem 1.1rem;
+}
+.notice-icon { flex-shrink: 0; font-size: 0.9rem; margin-top: 1px; }
+.notice-body { flex: 1; }
+.notice-title {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700; color: #b45309; margin-bottom: 0.3rem;
+}
+.notice-text {
+    font-size: 0.85rem; color: #92400e; line-height: 1.6;
+}
+
+/* ── BACK BUTTON ─────────────────────────────────────────── */
+.no-election-actions {
+    display: flex; justify-content: center;
+}
+.back-btn {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: var(--ink-2); color: var(--text);
+    border: 1px solid var(--border);
+    padding: 0.75rem 1.5rem; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-decoration: none;
+}
+.back-btn:hover { background: #fff; transform: translateY(-1px); }
+.back-btn svg { flex-shrink: 0; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container text-center mt-5">
-    <h2 class="mb-3">Live Election Results</h2>
+<div class="no-election-page">
+    <div class="no-election-card reveal">
 
-    <div class="alert alert-warning mt-4" role="alert">
-        <h4 class="alert-heading">No Active Election</h4>
-        <p>
-            There is currently no active election available for viewing results.
-        </p>
-        <hr>
-        <p class="mb-0">
-            Please check back later.
-        </p>
+        <!-- Header -->
+        <div class="no-election-head">
+            <div class="no-election-icon">🗳</div>
+            <div class="no-election-title">Live Results</div>
+            <div class="no-election-sub">Election Commission · Results Portal</div>
+        </div>
+
+        <!-- Body -->
+        <div class="no-election-body">
+            <div class="no-election-notice">
+                <span class="notice-icon">⚠</span>
+                <div class="notice-body">
+                    <div class="notice-title">No Active Election</div>
+                    <p class="notice-text">
+                        There is currently no active election available for viewing results.
+                        Please check back later when an election is in progress.
+                    </p>
+                </div>
+            </div>
+
+            <div class="no-election-actions">
+                <button class="back-btn" onclick="history.back()">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                    Go Back
+                </button>
+            </div>
+        </div>
+
     </div>
-
-<button class="btn btn-secondary mt-3" onclick="history.back()">
-    Go Back
-</button>
-
 </div>
 {% endblock %}

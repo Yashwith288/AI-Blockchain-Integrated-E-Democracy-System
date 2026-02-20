@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, render_template, request
 from utils.decorators import login_required, role_required
-from models.election import get_current_active_election
+from models.election import get_current_active_election_for_results
 from models.election import get_constituencies_for_election
 from services.result_service import get_constituency_results
 
@@ -14,7 +14,7 @@ bp = Blueprint("results", __name__, url_prefix="/results")
 @login_required
 @role_required("CEC", "CEO", "RO")
 def dashboard():
-    election = get_current_active_election()
+    election = get_current_active_election_for_results()
 
     if not election:
         return render_template("results/no_active_election.html")
@@ -35,7 +35,7 @@ def dashboard():
 @login_required
 @role_required("CEC", "CEO", "RO")
 def constituency_results():
-    election = get_current_active_election()
+    election = get_current_active_election_for_results()
     constituency_id = request.args.get("constituency_id")
 
     if not election or not constituency_id:

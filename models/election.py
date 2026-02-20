@@ -64,7 +64,8 @@ def get_all_elections():
     elections=fetch_all(ELECTIONS_TABLE)
     for election in elections:
         state=get_state_name_by_state_id(election['state_id'])
-        election["state_name"]=state["state_name"]
+        election["state_name"]=state["state_name"],
+        election["_start_time"]=format_datetime(election["start_time"])
         election["_end_time"]=election["end_time"]
         election["start_time"]=format_datetime(election["start_time"])
         election["end_time"]=format_datetime(election["end_time"])
@@ -134,7 +135,7 @@ def is_constituency_in_election(election_id: str, constituency_id: str) -> bool:
         }
     )
     return record is not None
-
+'''
 def get_active_elections_by_constituency(constituency_id: str):
     """
     Step 1: Find election_ids mapped to this constituency
@@ -173,11 +174,57 @@ def get_active_elections_by_constituency(constituency_id: str):
             elections.append(election)
 
     return elections
+'''
+
+def get_active_elections_by_constituency(constituency_id: str):
+    """
+    Returns ACTIVE elections mapped to this constituency.
+    Lifecycle logic handled elsewhere — we only fetch ACTIVE ones.
+    """
+
+    # 1️⃣ Get election IDs mapped to this constituency
+    mappings = fetch_all(
+        ELECTION_CONSTITUENCIES_TABLE,
+        {"constituency_id": constituency_id}
+    )
+
+    if not mappings:
+        return []
+
+    election_ids = [row["election_id"] for row in mappings]
+
+    # 2️⃣ Fetch ACTIVE elections only
+    elections = []
+
+    for eid in election_ids:
+        election = fetch_one(
+            ELECTIONS_TABLE,
+            {
+                "id": eid,
+                "status": "ACTIVE"
+            }
+        )
+
+        if election:
+            elections.append(election)
+
+    return elections
 
 def get_current_active_election():
     now = utc_now().isoformat()
 
     elections = fetch_all("elections", {"status": "Approved"})
+
+    for election in elections:
+        if election["start_time"] <= now <= election["end_time"]:
+            return election
+
+    return None
+
+def get_current_active_election_for_results():
+    now = utc_now().isoformat()
+
+    elections = fetch_all("elections", {"status": "ACTIVE"})
 
     for election in elections:
         if election["start_time"] <= now <= election["end_time"]:
@@ -278,3 +325,18 @@ def get_elections_by_constituency(constituency_id: str):
             elections.append(e)
 
     return elections
+
+def mark_election_active(election_id: str):
+    """
+    Marks an election as ACTIVE.
+    Should be triggered once when start_time is reached.
+    """
+    return update_record(
+        ELECTIONS_TABLE,
+        {"id": election_id},
+        {
+            "status": "ACTIVE"
+        },
+        use_admin=True
+    )
+

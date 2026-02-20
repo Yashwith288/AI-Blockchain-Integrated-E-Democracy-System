@@ -69,7 +69,7 @@ def logout():
         unregister_voting_terminal(booth_id)
 
     logout_current_user()
-    return redirect(url_for("auth.login"))
+    return redirect(url_for("public.landing"))
 
 # -----------------------------
 # Forgot Password - Request

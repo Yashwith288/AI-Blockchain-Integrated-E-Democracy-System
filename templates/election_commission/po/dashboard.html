@@ -164,6 +164,7 @@
     color: var(--muted);
 }
 .field input[type="text"],
+.field input[type="number"],
 .field select {
     font-family: var(--font-mono);
     font-size: 0.82rem;
@@ -177,12 +178,37 @@
     appearance: none;
 }
 .field input[type="text"]:focus,
+.field input[type="number"]:focus,
 .field select:focus {
     border-color: var(--indigo);
     box-shadow: 0 0 0 3px var(--indigo-dim);
     background: #fff;
 }
 .field input::placeholder { color: var(--muted); }
+
+/* OTP input specific styling */
+.otp-input {
+    font-family: var(--font-mono) !important;
+    font-size: 1.4rem !important;
+    letter-spacing: 0.5em !important;
+    text-align: center !important;
+    padding: 0.75rem 1rem !important;
+    border: 1px solid var(--border);
+    background: var(--ink-2);
+    color: var(--indigo);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    width: 100%;
+}
+.otp-input:focus {
+    border-color: var(--indigo);
+    box-shadow: 0 0 0 3px var(--indigo-dim);
+    background: #fff;
+}
+.otp-input:not(:placeholder-shown) {
+    background: var(--indigo-dim);
+    border-color: rgba(79,70,229,0.4);
+}
 
 /* select wrapper with chevron */
 .select-wrap { position: relative; }
@@ -304,44 +330,6 @@
     .po-header { padding: 3rem 2rem 1.5rem; }
     .po-body   { padding: 1.5rem 2rem 3rem; grid-template-columns: 1fr; }
     .panel.span-2 { grid-column: auto; }
-}
-
-/* ── OTP BOXES ───────────────────────────────────────────── */
-.otp-boxes {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 1.25rem;
-}
-.otp-box {
-    width: 48px;
-    height: 48px;
-    text-align: center;
-    font-family: var(--font-mono);
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--indigo);
-    border: 1px solid var(--border);
-    background: var(--ink-2);
-    outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-    caret-color: transparent;
-}
-.otp-box:focus {
-    border-color: var(--indigo);
-    box-shadow: 0 0 0 3px var(--indigo-dim);
-    background: #fff;
-}
-.otp-box.filled {
-    background: var(--indigo-dim);
-    border-color: rgba(79,70,229,0.4);
-}
-/* separator dot between box 3 and 4 */
-.otp-boxes .otp-sep {
-    font-family: var(--font-mono);
-    font-size: 1.2rem;
-    color: var(--muted);
-    user-select: none;
 }
 </style>
 {% endblock %}
@@ -478,19 +466,19 @@
 
                 <div class="divider"></div>
 
-                <!-- OTP — 6 boxes -->
+                <!-- OTP — simple text input -->
                 <div class="field">
-                    <label>OTP (sent to voter email)</label>
-                    <div class="otp-boxes">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-                    </div>
-                    <!-- hidden input carries assembled OTP -->
-                    <input type="hidden" id="otp" name="otp">
+                    <label>OTP (sent to voter's email)</label>
+                    <input
+                        type="text"
+                        id="otp"
+                        name="otp"
+                        class="otp-input"
+                        placeholder="Enter 6-digit OTP"
+                        maxlength="6"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                    >
                 </div>
 
                 <!-- Actions -->
@@ -611,7 +599,7 @@ function switchQRCamera() {
     qrScanner.stop().then(() => startWithCamera(cameras[currentCamIdx].id));
 }
 
-let qrHandled = false;  // guard: html5-qrcode can fire multiple times
+let qrHandled = false;
 
 function onQRSuccess(text) {
     if (!text || qrHandled) return;
@@ -620,11 +608,9 @@ function onQRSuccess(text) {
     setVoterId(text);
     stopQRScan();
 
-    // Brief visual feedback
     const display = document.getElementById('voterIdDisplay');
     display.textContent = '✓ ' + text + ' — requesting OTP…';
 
-    // Auto-click Request OTP after a short delay so the PO sees the scanned ID
     setTimeout(() => {
         document.querySelector('button[value="request_otp"]').click();
     }, 600);
@@ -638,69 +624,10 @@ function stopQRScan() {
     document.getElementById('switch-btn').style.display = 'none';
 }
 
-/* ── OTP 6-box logic ─────────────────────────────────────── */
-(function () {
-    const boxes   = Array.from(document.querySelectorAll('.otp-box'));
-    const hidden  = document.getElementById('otp');
-
-    function assemble() {
-        hidden.value = boxes.map(b => b.value).join('');
-    }
-
-    boxes.forEach((box, i) => {
-        // Only allow digits
-        box.addEventListener('keydown', e => {
-            const allowed = e.key === 'Backspace' || e.key === 'ArrowLeft' ||
-                            e.key === 'ArrowRight' || e.key === 'Tab' ||
-                            /^[0-9]$/.test(e.key);
-            if (!allowed) { e.preventDefault(); return; }
-
-            if (/^[0-9]$/.test(e.key)) {
-                e.preventDefault();
-                box.value = e.key;
-                box.classList.add('filled');
-                assemble();
-                if (i < boxes.length - 1) boxes[i + 1].focus();
-            }
-
-            if (e.key === 'Backspace') {
-                if (box.value) {
-                    box.value = '';
-                    box.classList.remove('filled');
-                    assemble();
-                } else if (i > 0) {
-                    boxes[i - 1].focus();
-                    boxes[i - 1].value = '';
-                    boxes[i - 1].classList.remove('filled');
-                    assemble();
-                }
-            }
-
-            if (e.key === 'ArrowLeft'  && i > 0)              boxes[i - 1].focus();
-            if (e.key === 'ArrowRight' && i < boxes.length - 1) boxes[i + 1].focus();
-        });
-
-        // Handle paste on any box
-        box.addEventListener('paste', e => {
-            e.preventDefault();
-            const digits = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
-            digits.split('').forEach((d, j) => {
-                if (boxes[j]) {
-                    boxes[j].value = d;
-                    boxes[j].classList.add('filled');
-                }
-            });
-            assemble();
-            const next = boxes[Math.min(digits.length, boxes.length - 1)];
-            if (next) next.focus();
-        });
-    });
-
-    // Assemble OTP before any form submit
-    document.querySelector('form[action*="authorize_voter"]')
-        .addEventListener('submit', assemble);
-})();
-
+/* ── OTP: only digits allowed ────────────────────────────── */
+document.getElementById('otp').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+});
 </script>
 
 {% endblock %}

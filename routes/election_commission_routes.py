@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from utils.decorators import login_required, role_required
-from utils.helpers import format_datetime
+from utils.helpers import format_datetime,utc_now
 from services.election_service import (
     create_state_election,
     approve_state_election
@@ -19,6 +19,7 @@ from datetime import datetime
 from models.election import add_constituency_to_election,is_roll_locked
 from models.constituency import get_constituencies_by_state
 from services.election_finalizer import finalize_election_if_needed
+from services.election_activation_service import activate_election_if_needed
 from models.election import get_state_name_by_state_id,get_election_by_id, get_elections_by_constituency
 from models.booth import get_booths_by_constituency
 from supabase_db.client import supabase_admin, supabase_public
@@ -41,11 +42,15 @@ def dashboard():
     if role == "CEC":
         elections = get_all_elections()
         for election in elections:
+            activate_election_if_needed(election)
             finalize_election_if_needed(election)
         return render_template("election_commission/cec/dashboard.html", elections=elections)
 
     if role == "CEO":
         elections = get_elections_by_state(session.get("state_id"))
+        for election in elections:
+            activate_election_if_needed(election)
+            finalize_election_if_needed(election)
 
         return render_template(
             "election_commission/ceo/dashboard.html",
@@ -54,20 +59,36 @@ def dashboard():
         return render_template("election_commission/ceo/dashboard.html", elections=elections)
 
     if role == "DEO":
+        elections = get_elections_by_state(session.get("state_id"))
+        for election in elections:
+            activate_election_if_needed(election)
+            finalize_election_if_needed(election)
         return render_template("election_commission/deo/dashboard.html")
 
     if role == "RO":
+        elections = get_elections_by_constituency(session.get("constituency_id"))
+        for election in elections:
+            activate_election_if_needed(election)
+            finalize_election_if_needed(election)
         candidates = get_candidates_by_constituency(session.get("constituency_id"))
         elections = get_elections_by_constituency(session.get("constituency_id"))
         return render_template("election_commission/ro/nomination_management.html", candidates=candidates,elections=elections)
 
     if role == "ERO":
+        elections = get_elections_by_state(session.get("state_id"))
+        for election in elections:
+            activate_election_if_needed(election)
+            finalize_election_if_needed(election)
         voters = get_voters_by_constituency(session.get("constituency_id"))
         elections = get_elections_by_state(session.get("state_id"))
         booths = get_booths_by_constituency(session.get("constituency_id"))
         return render_template("election_commission/ero/voter_management.html", voters=voters,elections=elections,booths=booths)
 
     if role == "BLO":
+        elections = get_elections_by_state(session.get("state_id"))
+        for election in elections:
+            activate_election_if_needed(election)
+            finalize_election_if_needed(election)
         voters = get_voters_by_booth(session.get("booth_id"))
         return render_template("election_commission/blo/voter_verification.html", voters=voters)
 
@@ -84,7 +105,6 @@ def dashboard():
 def create_election():
 
     # Always runs (GET + POST)
-    print("DEBUG state_id:", session.get("state_id"))
 
     if request.method == "POST":
         try:
@@ -226,8 +246,7 @@ def add_candidate():
 
         if deadline:
             deadline_dt = datetime.fromisoformat(str(deadline))
-
-            if datetime.utcnow() > deadline_dt:
+            if utc_now().isoformat() > str(deadline_dt):
                 flash("Nomination deadline has passed. No more candidates can be added.", "error")
                 return redirect(url_for("election_commission.nomination_management"))
 
@@ -430,7 +449,6 @@ def verify_voter(voter_id):
         # Keep extension
         ext = file.filename.rsplit(".", 1)[-1]
         filename = f"{voter_id}_{uuid.uuid4()}.{ext}"
-        print(filename)
         # Upload
         client.storage.from_("voter-photos").upload(
             filename,
@@ -440,11 +458,10 @@ def verify_voter(voter_id):
 
         # ✅ Your SDK returns string
         photo_url = client.storage.from_("voter-photos").get_public_url(filename)
-        print(photo_url)
         update_voter_details(voter_id, {
             "photo_url": photo_url,
             "is_verified": True,
-            "verified_at": datetime.utcnow().isoformat(),
+            "verified_at": utc_now().isoformat(),
             "verified_by": session.get("user_id")
         })
 

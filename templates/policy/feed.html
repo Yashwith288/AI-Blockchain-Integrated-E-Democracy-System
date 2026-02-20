@@ -1,86 +1,304 @@
 {% extends "base.html" %}
 {% set title = "Policy Feed" %}
 
-{% block content %}
-<div class="policy-feed">
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   POLICY FEED
+═══════════════════════════════════════════════════════════ */
 
-    <h2>🏛️ Policy Discussions</h2>
+/* ── PAGE HEADER ─────────────────────────────────────────── */
+.feed-header {
+    padding: 3.5rem 4rem 2rem;
+    background: var(--ink-2);
+    border-bottom: 1px solid var(--border);
+    position: relative; overflow: hidden;
+}
+.feed-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(79,70,229,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 70% 80% at 0% 0%, black 20%, transparent 70%);
+    pointer-events: none;
+}
+.feed-header-inner {
+    position: relative; z-index: 1;
+    display: flex; align-items: flex-end;
+    justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+}
+.feed-header-left .section-tag { margin-bottom: 0.75rem; }
+.feed-header-left h1 {
+    font-family: var(--font-disp);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 0.93; color: var(--text); margin-bottom: 0;
+}
+.feed-header-left h1 span { color: var(--indigo); }
+
+/* create button */
+.create-btn {
+    display: inline-flex; align-items: center; gap: 0.6rem;
+    font-family: var(--font-mono); font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 700;
+    background: var(--indigo); color: #fff;
+    padding: 0.75rem 1.4rem; border: none; cursor: pointer;
+    text-decoration: none;
+    clip-path: polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+    transition: background 0.2s, transform 0.15s;
+    align-self: flex-end;
+}
+.create-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+.create-btn svg { flex-shrink: 0; }
+
+/* ── BODY ────────────────────────────────────────────────── */
+.feed-body {
+    padding: 2rem 4rem 5rem;
+    max-width: 860px;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.feed-empty {
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    padding: 5rem 2rem; border: 1px solid var(--border); background: #fff;
+}
+.feed-empty-icon {
+    width: 52px; height: 52px; background: var(--ink-2);
+    border: 1px solid var(--border); display: grid; place-items: center; font-size: 1.3rem;
+}
+.feed-empty-title {
+    font-family: var(--font-disp); font-size: 1.5rem; color: var(--text); line-height: 1;
+}
+.feed-empty-sub {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ── FEED LIST ───────────────────────────────────────────── */
+.feed-list {
+    display: flex; flex-direction: column; gap: 1px;
+    border: 1px solid var(--border);
+}
+
+/* ── POLICY CARD ─────────────────────────────────────────── */
+.policy-card {
+    display: flex; gap: 0;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    position: relative;
+}
+.policy-card:last-child { border-bottom: none; }
+.policy-card:hover { background: var(--ink-2); }
+
+/* vote column */
+.pc-vote-col {
+    width: 52px; flex-shrink: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    gap: 0; padding: 1rem 0;
+    border-right: 1px solid var(--border);
+    background: var(--ink-2);
+}
+.vote-btn {
+    width: 32px; height: 28px;
+    display: grid; place-items: center;
+    font-size: 0.7rem; cursor: pointer;
+    background: none; border: none;
+    color: var(--muted);
+    transition: color 0.15s, background 0.15s;
+}
+.vote-btn:hover.upvote   { color: var(--indigo); background: var(--indigo-dim); }
+.vote-btn:hover.downvote { color: #dc2626; background: rgba(220,38,38,0.07); }
+.vote-score {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    font-weight: 700; color: var(--text); line-height: 1;
+    padding: 0.2rem 0;
+}
+.vote-score.positive { color: var(--indigo); }
+.vote-score.negative { color: #dc2626; }
+
+/* main content */
+.pc-main {
+    flex: 1; min-width: 0;
+    padding: 1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+}
+
+/* title */
+.pc-title {
+    font-family: var(--font-disp); font-size: 1.25rem;
+    line-height: 1.15; color: var(--text);
+}
+.pc-title a {
+    color: inherit; text-decoration: none;
+    transition: color 0.15s;
+}
+.pc-title a:hover { color: var(--indigo); }
+
+/* meta row */
+.pc-meta {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+.pc-author {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    font-weight: 700; letter-spacing: 0.04em; color: var(--text);
+}
+.pc-sep { color: var(--border); font-size: 0.5rem; }
+.pc-party {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--indigo); background: var(--indigo-dim);
+    border: 1px solid rgba(79,70,229,0.15); padding: 0.1rem 0.45rem;
+}
+.pc-time {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.05em; color: var(--muted);
+}
+
+/* image preview thumbnail */
+.pc-image {
+    width: 72px; height: 52px;
+    object-fit: cover; display: block;
+    border: 1px solid var(--border); flex-shrink: 0;
+    align-self: flex-start; margin-top: 0.25rem;
+}
+
+/* footer */
+.pc-footer {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-top: auto; padding-top: 0.35rem;
+}
+.pc-comments {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.pc-comments:hover { color: var(--text); }
+.pc-comments svg { flex-shrink: 0; }
+
+/* right thumb area */
+.pc-right {
+    display: flex; flex-direction: column;
+    align-items: flex-end; justify-content: flex-start;
+    padding: 1rem 1.1rem 1rem 0;
+    gap: 0.5rem; flex-shrink: 0;
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 760px) {
+    .feed-header { padding: 2.5rem 2rem 1.5rem; }
+    .feed-body   { padding: 1.5rem 2rem 3rem; }
+    .pc-image    { width: 56px; height: 42px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── HEADER ────────────────────────────────────────────── -->
+<div class="feed-header">
+    <div class="feed-header-inner">
+        <div class="feed-header-left">
+            <div class="section-tag">Legislature · Public Forum</div>
+            <h1>Policy <span>Discussions</span></h1>
+        </div>
+        {% if session.role in ["ELECTED_REP", "OPPOSITION_REP"] %}
+        <a href="{{ url_for('rep_policy.create_policy') }}" class="create-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Post
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ── BODY ──────────────────────────────────────────────── -->
+<div class="feed-body">
 
     {% if posts %}
+    <div class="feed-list">
         {% for post in posts %}
-        <div class="policy-card">
+        <div class="policy-card reveal">
 
-            <!-- TITLE -->
-            <h3 class="policy-title">
-                <a href="{{ url_for('rep_policy.view_policy', post_id=post.id) }}">
-                    {{ post.title or "Public Forum Discussion" }}
-                </a>
-            </h3>
+            <!-- Vote column -->
+            <div class="pc-vote-col">
+                <form method="POST" action="{{ url_for('rep_policy.vote', post_id=post.id) }}">
+                    <input type="hidden" name="vote" value="1">
+                    <button type="submit" class="vote-btn upvote" aria-label="Upvote">▲</button>
+                </form>
 
-            <!-- META -->
-            <div class="policy-meta">
-                <span><strong>{{ post.author_name }}</strong></span>
+                <span class="vote-score {% if post.score > 0 %}positive{% elif post.score < 0 %}negative{% endif %}">
+                    {{ post.score }}
+                </span>
 
-                {% if post.party_name %}
-                    <span class="party-badge">• {{ post.party_name }}</span>
-                {% endif %}
-
-                <span class="post-time">• {{ post.time_ago }}</span>
+                <form method="POST" action="{{ url_for('rep_policy.vote', post_id=post.id) }}">
+                    <input type="hidden" name="vote" value="-1">
+                    <button type="submit" class="vote-btn downvote" aria-label="Downvote">▼</button>
+                </form>
             </div>
 
-            <!-- IMAGE PREVIEW -->
+            <!-- Main content -->
+            <div class="pc-main">
+                <div class="pc-title">
+                    <a href="{{ url_for('rep_policy.view_policy', post_id=post.id) }}">
+                        {{ post.title or "Public Forum Discussion" }}
+                    </a>
+                </div>
+
+                <div class="pc-meta">
+                    <span class="pc-author">{{ post.author_name }}</span>
+                    {% if post.party_name %}
+                    <span class="pc-sep">●</span>
+                    <span class="pc-party">{{ post.party_name }}</span>
+                    {% endif %}
+                    <span class="pc-sep">●</span>
+                    <span class="pc-time">{{ post.time_ago }}</span>
+                </div>
+
+                <div class="pc-footer">
+                    <a href="{{ url_for('rep_policy.view_policy', post_id=post.id) }}"
+                       class="pc-comments">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        {{ post.comment_count }} comment{{ 's' if post.comment_count != 1 }}
+                    </a>
+                </div>
+            </div>
+
+            <!-- Thumbnail if image exists -->
             {% if post.image_urls %}
-            <div class="policy-preview-images">
-                <img src="{{ post.image_urls[0] }}" class="preview-image">
+            <div class="pc-right">
+                <img src="{{ post.image_urls[0] }}" class="pc-image" alt="Post image">
             </div>
             {% endif %}
 
-            <!-- FOOTER -->
-            <div class="policy-footer">
-
-                <!-- VOTES -->
-<div class="vote-panel">
-
-    <!-- UPVOTE -->
-    <form method="POST" action="{{ url_for('rep_policy.vote', post_id=post.id) }}">
-        <input type="hidden" name="vote" value="1">
-        <button type="submit" class="vote-btn upvote" aria-label="Upvote">
-            ▲
-        </button>
-    </form>
-
-    <!-- SCORE -->
-    <div class="score">{{ post.score }}</div>
-
-    <!-- DOWNVOTE -->
-    <form method="POST" action="{{ url_for('rep_policy.vote', post_id=post.id) }}">
-        <input type="hidden" name="vote" value="-1">
-        <button type="submit" class="vote-btn downvote" aria-label="Downvote">
-            ▼
-        </button>
-    </form>
-
-</div>
-
-
-                <!-- COMMENTS -->
-                <div class="comment-count">
-                    💬 {{ post.comment_count }}
-                </div>
-
-            </div>
-
         </div>
         {% endfor %}
-    {% else %}
-        <p>No policy posts yet.</p>
-    {% endif %}
+    </div>
 
-    {% if session.role in ["ELECTED_REP", "OPPOSITION_REP"] %}
-        <a href="{{ url_for('rep_policy.create_policy') }}" class="btn-primary">
-            ➕ Create Policy Post
+    {% else %}
+    <div class="feed-empty reveal">
+        <div class="feed-empty-icon">🏛</div>
+        <div class="feed-empty-title">No discussions yet</div>
+        <div class="feed-empty-sub">Be the first to post a policy discussion</div>
+        {% if session.role in ["ELECTED_REP", "OPPOSITION_REP"] %}
+        <a href="{{ url_for('rep_policy.create_policy') }}" class="create-btn" style="clip-path:none; margin-top:0.5rem;">
+            + New Post
         </a>
+        {% endif %}
+    </div>
     {% endif %}
 
 </div>
+
 {% endblock %}

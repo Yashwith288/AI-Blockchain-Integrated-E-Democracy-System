@@ -116,3 +116,18 @@ def get_voter_by_user_id(user_id: str):
         return None
 
     return fetch_one("voters", {"id": mapping["voter_id"]})
+
+
+def get_user_id_by_voter_id(voter_id: str):
+    """
+    Returns the mapped user_id for a voter_id.
+    """
+    record = fetch_one(
+        "voter_user_map",
+        {"voter_id": voter_id}
+    )
+
+    if not record:
+        return None
+
+    return record.get("user_id")

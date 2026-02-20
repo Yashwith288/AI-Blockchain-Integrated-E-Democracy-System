@@ -9,11 +9,16 @@ import string
 # -----------------------------
 # Time Helpers
 # -----------------------------
-
+'''
 def utc_now():
     """Return current UTC timestamp"""
     return datetime.now(timezone.utc)
+'''
+from datetime import datetime, timezone, timedelta
 
+def utc_now():
+    """Return current IST time (UTC +5:30)"""
+    return datetime.now(timezone.utc) + timedelta(hours=5, minutes=30)
 
 from datetime import datetime
 
@@ -166,7 +171,7 @@ def is_commission_role(role: str) -> bool:
 def assign_constituencies_to_election(election_id: str, constituency_ids: list[str]):
     for cid in constituency_ids:
         add_constituency_to_election(election_id, cid)
-
+'''
 def parse_iso_date(value) -> date:
     """
     Converts ISO date/datetime string to date object.
@@ -179,6 +184,24 @@ def parse_iso_date(value) -> date:
 
     # Strip time part if present
     return date.fromisoformat(value[:10])
+'''
+from datetime import datetime, date
+
+def parse_iso_date(value):
+    if not value:
+        return None
+
+    # Try ISO first
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError:
+        pass
+
+    # Try human-readable format like "21 Feb 2026"
+    try:
+        return datetime.strptime(value, "%d %b %Y").date()
+    except ValueError:
+        raise ValueError(f"Unsupported date format: {value}")
 
 IST = pytz.timezone("Asia/Kolkata")
 

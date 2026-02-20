@@ -8,6 +8,9 @@ from models.election import get_active_elections_by_constituency
 from services.booth_session_service import start_voter_session, end_voter_session
 from services.otp_service import generate_otp, verify_otp
 from services.email_service import send_otp_email
+from models.election import get_all_elections
+from services.election_finalizer import finalize_election_if_needed
+from services.election_activation_service import activate_election_if_needed
 
 
 
@@ -22,11 +25,14 @@ bp = Blueprint("presiding_officer", __name__, url_prefix="/po")
 @login_required
 @role_required("PO")
 def dashboard():
+    elections = get_all_elections()
+    for election in elections:
+        activate_election_if_needed(election)
+        finalize_election_if_needed(election)
     constituency_id = session.get("constituency_id")
 
     # Fetch active elections for this constituency
     elections = get_active_elections_by_constituency(constituency_id)
-
     # PO selects election
     if request.method == "POST":
         election_id = request.form.get("election_id")

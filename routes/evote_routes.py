@@ -14,6 +14,11 @@ from services.booth_session_service import (
 import uuid
 from datetime import datetime
 from models.election import get_election_by_id
+from services.email_service import send_vote_receipt_email
+import uuid
+from models.voter import get_user_id_by_voter_id
+from models.user import get_user_by_id
+from models.constituency import get_constituency_by_id
 
 bp = Blueprint("evote", __name__, url_prefix="/evote")
 
@@ -127,10 +132,29 @@ def vote():
             end_voter_session(booth_id)
 
             # ✅ Show success page instead of redirect
-            return render_template(
-                "evote/vote_success.html",
-                result=result
+            receipt_hash = result.get("receipt_hash")
+            # Get voter email (you must have this function)
+            user_id = get_user_id_by_voter_id(voter_id)
+            user=get_user_by_id(user_id)
+            voter_email = user["email"]
+
+            election = get_election_by_id(election_id)
+            constituency = get_constituency_by_id(constituency_id)
+
+            # Send receipt email
+            send_vote_receipt_email(
+                to_email=voter_email,
+                election_name=election["election_name"],
+                constituency_name=constituency["constituency_name"],
+                receipt_hash=receipt_hash
             )
+
+            # End voter session AFTER sending receipt
+            end_voter_session(booth_id)
+
+            flash("Vote recorded and receipt sent", "success")
+
+            return redirect("/evote/waiting")
 
 
         except Exception as e:

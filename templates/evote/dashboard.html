@@ -1,42 +1,283 @@
 {% extends "base.html" %}
+{% set title = "eVote — Waiting" %}
 
-{% set title = "eVote Dashboard" %}
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════════════════
+   EVOTE WAITING / DASHBOARD PAGE
+═══════════════════════════════════════════════════════════ */
+
+.evote-page {
+    min-height: calc(100vh - var(--nav-h));
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 3rem 2rem 5rem;
+    background: var(--ink-2);
+    position: relative; overflow: hidden;
+}
+
+/* background grid */
+.evote-page::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(79,70,229,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(79,70,229,0.05) 1px, transparent 1px);
+    background-size: 36px 36px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, black 30%, transparent 80%);
+    pointer-events: none;
+}
+
+/* ── CARD ────────────────────────────────────────────────── */
+.evote-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 580px;
+    background: #fff; border: 1px solid var(--border);
+    overflow: hidden;
+}
+.evote-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--indigo), var(--teal));
+}
+
+/* ── CARD HEADER ─────────────────────────────────────────── */
+.evote-card-head {
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--ink-2);
+    display: flex; flex-direction: column; align-items: center; gap: 1rem;
+    text-align: center;
+}
+.evote-shield {
+    width: 56px; height: 56px;
+    background: var(--indigo-dim);
+    border: 1px solid rgba(79,70,229,0.2);
+    display: grid; place-items: center;
+    font-size: 1.5rem; flex-shrink: 0;
+    position: relative;
+}
+/* pulsing ring around shield */
+.evote-shield::after {
+    content: '';
+    position: absolute; inset: -6px;
+    border: 2px solid rgba(79,70,229,0.15);
+    animation: pulse-ring 2s ease-out infinite;
+}
+@keyframes pulse-ring {
+    0%   { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.35); }
+}
+.evote-card-title {
+    font-family: var(--font-disp);
+    font-size: 2rem; line-height: 1; color: var(--text);
+}
+.evote-card-sub {
+    font-family: var(--font-mono); font-size: 0.62rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ── ELECTION TAG ────────────────────────────────────────── */
+.evote-election-row {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.85rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--indigo-dim);
+}
+.evote-election-label {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--indigo);
+    flex-shrink: 0;
+}
+.evote-election-name {
+    font-family: var(--font-mono); font-size: 0.72rem;
+    font-weight: 700; color: var(--indigo); letter-spacing: 0.04em;
+    flex: 1; text-align: right;
+}
+/* live dot */
+.evote-live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--teal); flex-shrink: 0;
+    animation: blink 1.4s ease-in-out infinite;
+}
+
+/* ── CARD BODY ───────────────────────────────────────────── */
+.evote-card-body {
+    padding: 1.75rem 2rem;
+    display: flex; flex-direction: column; gap: 1.5rem;
+}
+
+/* welcome text */
+.evote-welcome {
+    font-size: 0.9rem; color: var(--text); line-height: 1.75;
+    text-align: center;
+    border-left: 2px solid var(--indigo);
+    padding-left: 1rem; text-align: left;
+}
+
+/* CTA button */
+.evote-cta {
+    display: flex; justify-content: center;
+}
+.evote-btn {
+    display: inline-flex; align-items: center; gap: 0.75rem;
+    font-family: var(--font-mono); font-size: 0.72rem;
+    letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700;
+    background: var(--indigo); color: #fff;
+    padding: 1rem 2rem; border: none; cursor: pointer;
+    text-decoration: none;
+    clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+    transition: background 0.2s, transform 0.15s;
+    position: relative; overflow: hidden;
+}
+.evote-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0); 
+    transition: background 0.2s;
+}
+.evote-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+.evote-btn svg { flex-shrink: 0; transition: transform 0.2s; }
+.evote-btn:hover svg { transform: translateX(3px); }
+
+/* ── INSTRUCTIONS ────────────────────────────────────────── */
+.evote-instructions {
+    border: 1px solid var(--border);
+    background: var(--ink-2);
+}
+.evote-instructions-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border);
+}
+.evote-instructions-title {
+    font-family: var(--font-mono); font-size: 0.6rem;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--indigo);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.evote-instructions-title::before {
+    content: ''; width: 12px; height: 1px; background: var(--indigo);
+}
+.evote-steps {
+    list-style: none;
+    display: flex; flex-direction: column;
+}
+.evote-step {
+    display: flex; align-items: flex-start; gap: 0.85rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem; color: var(--text); line-height: 1.5;
+}
+.evote-step:last-child { border-bottom: none; }
+.evote-step-num {
+    font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+    color: var(--indigo); background: var(--indigo-dim);
+    border: 1px solid rgba(79,70,229,0.2);
+    width: 20px; height: 20px; flex-shrink: 0;
+    display: grid; place-items: center;
+    margin-top: 1px;
+}
+
+/* ── SECURITY FOOTER ─────────────────────────────────────── */
+.evote-security {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.85rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background: var(--teal-dim);
+}
+.evote-security-icon { color: var(--teal); flex-shrink: 0; }
+.evote-security-text {
+    font-family: var(--font-mono); font-size: 0.58rem;
+    letter-spacing: 0.08em; color: var(--teal); line-height: 1.5;
+}
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="evote-page">
+    <div class="evote-card reveal">
 
-<h2 class="text-center">Polling Booth e-Voting Dashboard</h2>
+        <!-- Header -->
+        <div class="evote-card-head">
+            <div class="evote-shield">🗳</div>
+            <div>
+                <div class="evote-card-title">Polling Booth eVoting</div>
+                <div class="evote-card-sub">Secure Digital Voting System</div>
+            </div>
+        </div>
 
-<p class="mt-1">
-    <strong>Election:</strong>
-    {{ session.get("active_election_name", "Not Set") }}
-</p>
+        <!-- Active election -->
+        <div class="evote-election-row">
+            <span class="evote-election-label">Active Election</span>
+            <span class="evote-election-name">
+                {{ session.get("active_election_name", "Not Set") }}
+            </span>
+            <span class="evote-live-dot" title="Session active"></span>
+        </div>
 
+        <!-- Body -->
+        <div class="evote-card-body">
 
-<p class="text-center mt-2">
-    Welcome to the secure digital voting system.
-    Please proceed to cast your vote using the official polling booth device.
-</p>
+            <!-- Welcome -->
+            <p class="evote-welcome">
+                Welcome to the secure digital voting system.
+                Please proceed to cast your vote using the official polling booth device.
+                Your identity has been verified — your vote remains completely anonymous.
+            </p>
 
-<!-- Action Buttons -->
-<div class="mt-3">
-    <div class="text-center mt-2">
-        <a href="{{ url_for('evote.vote') }}">
-            <button>Proceed to Vote</button>
-        </a>
+            <!-- CTA -->
+            <div class="evote-cta">
+                <a href="{{ url_for('evote.vote') }}" class="evote-btn">
+                    Proceed to Vote
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </a>
+            </div>
+
+            <!-- Instructions -->
+            <div class="evote-instructions">
+                <div class="evote-instructions-head">
+                    <span class="evote-instructions-title">Important Instructions</span>
+                </div>
+                <ul class="evote-steps">
+                    <li class="evote-step">
+                        <span class="evote-step-num">01</span>
+                        Voting can only be done <strong>once per voter</strong>. Duplicate attempts will be rejected.
+                    </li>
+                    <li class="evote-step">
+                        <span class="evote-step-num">02</span>
+                        Your identity is verified, but your <strong>vote remains anonymous</strong> throughout the process.
+                    </li>
+                    <li class="evote-step">
+                        <span class="evote-step-num">03</span>
+                        Votes are securely stored and later verified using <strong>blockchain technology</strong>.
+                    </li>
+                    <li class="evote-step">
+                        <span class="evote-step-num">04</span>
+                        <strong>Do not refresh or close</strong> the screen while voting is in progress.
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Security footer -->
+        <div class="evote-security">
+            <svg class="evote-security-icon" width="14" height="14" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span class="evote-security-text">
+                End-to-end encrypted · Blockchain-verified · Identity protected
+            </span>
+        </div>
+
     </div>
 </div>
 
-<!-- Info Section -->
-<div class="mt-3">
-    <h3>Important Instructions</h3>
-    <ul class="mt-1">
-        <li>Voting can only be done once per voter.</li>
-        <li>Your identity is verified, but your vote remains anonymous.</li>
-        <li>Votes are securely stored and later verified using blockchain.</li>
-        <li>Do not refresh or close the screen while voting.</li>
-    </ul>
-</div>
-
 <script src="{{ url_for('static', filename='js/booth_status.js') }}"></script>
-
 {% endblock %}

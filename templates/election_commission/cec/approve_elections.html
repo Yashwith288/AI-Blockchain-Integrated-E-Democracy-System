@@ -48,7 +48,7 @@
                                 </span>
                             </td>
                             <td>
-                                {% if election.status != "Approved"  and election.status != "COMPLETED" %}
+                                {% if election.status|lower not in ["approved", "active", "completed"] %}
                                     <a
                                         href="{{ url_for('election_commission.approve_election', election_id=election.id) }}"
                                         class="btn-small"
